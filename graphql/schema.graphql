@@ -1,0 +1,78 @@
+# Recipe Search 3000 GraphQL Schema
+
+"A recipe with all its details"
+type Recipe {
+    "Unique identifier"
+    id: ID!
+    
+    "Recipe name"
+    name: String!
+    
+    "Recipe description"
+    description: String!
+    
+    "List of ingredients"
+    ingredients: [String!]!
+    
+    "Cooking steps"
+    steps: [String!]!
+    
+    "Author's email address"
+    author_email: String!
+    
+    "URL-friendly identifier"
+    slug: String!
+    
+    "Creation timestamp"
+    created_at: DateTime!
+    
+    "Last update timestamp"
+    updated_at: DateTime!
+    
+    "Number of ingredients (computed field)"
+    ingredient_count: Int!
+    
+    "Number of cooking steps (computed field)"
+    step_count: Int!
+}
+
+"Input for creating a new recipe"
+input CreateRecipeInput {
+    "Recipe name"
+    name: String! @rules(apply: ["required", "string", "min:1", "max:255"])
+    
+    "Recipe description"
+    description: String! @rules(apply: ["required", "string", "min:1"])
+    
+    "List of ingredients"
+    ingredients: [String!]! @rules(apply: ["required"])
+    
+    "Cooking steps"
+    steps: [String!]! @rules(apply: ["required"])
+    
+    "Author's email address"
+    author_email: String! @rules(apply: ["required", "email", "max:255"])
+}
+
+type Query {
+    "Search recipes with filters and pagination"
+    recipes(
+        author_email: String
+        keyword: String  
+        ingredient: String
+    ): [Recipe!]! @paginate(defaultCount: 15, maxCount: 100, resolver: "App\\GraphQL\\Queries\\SearchRecipes")
+    
+    "Get a single recipe by its slug"
+    recipe(slug: String!): Recipe @field(resolver: "App\\GraphQL\\Queries\\GetRecipe")
+    
+    "Simple health check query"
+    health: String! @field(resolver: "App\\GraphQL\\Queries\\Health@resolve")
+}
+
+type Mutation {
+    "Create a new recipe"
+    createRecipe(input: CreateRecipeInput!): Recipe! @field(resolver: "App\\GraphQL\\Mutations\\CreateRecipe")
+}
+
+# Scalar type for DateTime
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
