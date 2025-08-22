@@ -41,12 +41,12 @@
               placeholder="What would you like to cook today?"
               @keydown.enter="executeSearch"
               :disabled="loading"
-              class="flex-1 h-14 px-6 text-lg border-2 border-gray-200 rounded-l-xl focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+              class="flex-1 h-12 px-5 text-lg border-2 border-gray-200 rounded-l-xl focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
             >
             <button
               @click="executeSearch"
               :disabled="loading || !searchParams.keyword.trim()"
-              class="h-14 px-4 bg-alaskan-500 hover:bg-alaskan-600 text-white border-2 border-l-0 border-alaskan-500 hover:border-alaskan-600 transition-all duration-200 disabled:bg-alaskan-500/50 disabled:border-alaskan-500/50 disabled:cursor-not-allowed disabled:hover:bg-alaskan-500/50"
+              class="h-12 px-4 bg-alaskan-500 hover:bg-alaskan-600 text-white border-2 border-l-0 border-alaskan-500 hover:border-alaskan-600 transition-all duration-200 disabled:bg-alaskan-500/50 disabled:border-alaskan-500/50 disabled:cursor-not-allowed disabled:hover:bg-alaskan-500/50"
               :aria-label="loading ? 'Searching...' : 'Search'"
             >
               <Loader2 v-if="loading" :size="20" class="animate-spin" />
@@ -55,7 +55,7 @@
             <button
               @click="toggleFilterMenu"
               ref="filterMenuRef"
-              class="relative h-14 px-4 bg-white hover:bg-gray-50 text-gray-700 rounded-r-xl border-2 border-l-0 border-gray-200 hover:border-gray-300 transition-all duration-200"
+              class="relative h-12 px-4 bg-white hover:bg-gray-50 text-gray-700 rounded-r-xl border-2 border-l-0 border-gray-200 hover:border-gray-300 transition-all duration-200"
               :class="{ 'bg-gray-50 border-gray-300': showFilterMenu }"
               aria-label="Filter options"
             >
@@ -97,7 +97,7 @@
         </div>
 
         <!-- Applied Filters Panel -->
-        <div v-if="hasActiveFilters" class="bg-gray-50 rounded-lg p-3 mt-3">
+        <div v-if="hasActiveFilters" class="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-2">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-medium text-gray-700">Active Filters</h3>
             <button 
@@ -112,13 +112,13 @@
             <div
               v-for="(ingredient, index) in searchParams.ingredients"
               :key="`ingredient-${index}`"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golden-100 border border-golden-400 rounded-md text-sm transition-all duration-200 hover:bg-golden-200"
+              class="inline-flex items-center gap-1 px-2 py-1 bg-golden-100 border border-golden-400 rounded-md text-sm transition-all duration-200 hover:bg-golden-200"
             >
               <Utensils :size="14" class="text-ocean-600" />
               <span class="text-driftwood-800 font-medium">{{ ingredient }}</span>
               <button
                 @click="removeIngredient(index)"
-                class="ml-1 text-driftwood-700 hover:text-red-600 font-bold text-lg leading-none transition-colors"
+                class="ml-1 text-driftwood-700 hover:text-red-600 font-bold text-base leading-none transition-colors"
                 :aria-label="`Remove ingredient: ${ingredient}`"
               >
                 ×
@@ -129,13 +129,13 @@
             <div
               v-for="(author, index) in searchParams.authors"
               :key="`author-${index}`"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golden-100 border border-golden-400 rounded-md text-sm transition-all duration-200 hover:bg-golden-200"
+              class="inline-flex items-center gap-1 px-2 py-1 bg-golden-100 border border-golden-400 rounded-md text-sm transition-all duration-200 hover:bg-golden-200"
             >
               <User :size="14" class="text-salmon-600" />
               <span class="text-driftwood-800 font-medium">{{ author }}</span>
               <button
                 @click="removeAuthor(index)"
-                class="ml-1 text-driftwood-700 hover:text-red-600 font-bold text-lg leading-none transition-colors"
+                class="ml-1 text-driftwood-700 hover:text-red-600 font-bold text-base leading-none transition-colors"
                 :aria-label="`Remove author: ${author}`"
               >
                 ×
@@ -153,9 +153,9 @@
           leave-from-class="transform translate-y-0 opacity-100"
           leave-to-class="transform -translate-y-2 opacity-0"
         >
-          <div v-if="showIngredientInput" class="mt-4 p-4 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
-            <div class="flex items-center gap-3">
-              <Utensils :size="18" class="text-ocean-600" />
+          <div v-if="showIngredientInput" class="mt-3 p-3 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
+            <div class="flex items-center gap-2">
+              <Utensils :size="16" class="text-ocean-600" />
               <input
                 id="temp-ingredient"
                 ref="ingredientInput"
@@ -165,20 +165,20 @@
                 placeholder="Add ingredient (e.g. chocolate, flour)"
                 @keydown.enter="addIngredient"
                 @keydown.escape="cancelIngredientInput"
-                class="flex-1 px-3 py-2 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+                class="flex-1 px-3 py-1.5 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 text-sm"
               >
               <button
                 @click="addIngredient"
-                class="px-4 py-2 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
+                class="px-3 py-1.5 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
               >
                 Add
               </button>
               <button
                 @click="cancelIngredientInput"
-                class="p-2 text-driftwood-600 hover:text-driftwood-800 transition-colors"
+                class="p-1.5 text-driftwood-600 hover:text-driftwood-800 transition-colors"
                 aria-label="Cancel"
               >
-                <X :size="18" />
+                <X :size="16" />
               </button>
             </div>
           </div>
@@ -192,9 +192,9 @@
           leave-from-class="transform translate-y-0 opacity-100"
           leave-to-class="transform -translate-y-2 opacity-0"
         >
-          <div v-if="showAuthorInput" class="mt-4 p-4 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
-            <div class="flex items-center gap-3">
-              <User :size="18" class="text-salmon-600" />
+          <div v-if="showAuthorInput" class="mt-3 p-3 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
+            <div class="flex items-center gap-2">
+              <User :size="16" class="text-salmon-600" />
               <input
                 id="temp-author"
                 ref="authorInput"
@@ -204,20 +204,20 @@
                 placeholder="Add author email"
                 @keydown.enter="addAuthor"
                 @keydown.escape="cancelAuthorInput"
-                class="flex-1 px-3 py-2 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+                class="flex-1 px-3 py-1.5 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 text-sm"
               >
               <button
                 @click="addAuthor"
-                class="px-4 py-2 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
+                class="px-3 py-1.5 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
               >
                 Add
               </button>
               <button
                 @click="cancelAuthorInput"
-                class="p-2 text-driftwood-600 hover:text-driftwood-800 transition-colors"
+                class="p-1.5 text-driftwood-600 hover:text-driftwood-800 transition-colors"
                 aria-label="Cancel"
               >
-                <X :size="18" />
+                <X :size="16" />
               </button>
             </div>
           </div>
