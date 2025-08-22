@@ -124,10 +124,11 @@ class RecipeBuilder extends Builder
         }
 
         // Handle ingredients (supports arrays and single values)
+        // Multiple ingredients should be combined with AND logic per requirements
         if (!empty($filters['ingredients'])) {
             if (is_array($filters['ingredients'])) {
                 if (count($filters['ingredients']) > 1) {
-                    $this->withAnyIngredient($filters['ingredients']);
+                    $this->withAllIngredients($filters['ingredients']);
                 } else {
                     $this->withIngredient($filters['ingredients'][0]);
                 }

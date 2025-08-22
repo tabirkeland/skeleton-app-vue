@@ -495,7 +495,9 @@ class RecipeBuilderTest extends TestCase
             'ingredients' => ['cheese', 'chicken'],
         ])->get();
 
-        $this->assertCount(3, $recipes);
+        // With AND logic, only recipes with BOTH cheese AND chicken should be returned
+        $this->assertCount(1, $recipes);
+        $this->assertEquals('Cheese Chicken', $recipes->first()->name);
     }
 
     /**

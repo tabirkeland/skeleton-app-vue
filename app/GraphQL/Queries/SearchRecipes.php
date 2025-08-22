@@ -27,13 +27,6 @@ class SearchRecipes
      */
     public function __invoke($root, array $args, GraphQLContext $context, ResolveInfo $resolveInfo): Builder
     {
-        // Pass search parameters to the action
-        // The action returns a query builder that Lighthouse will paginate
-        return $this->action->execute([
-            'author_email' => $args['author_email'] ?? null,
-            'author_name' => $args['author_name'] ?? null,
-            'keyword' => $args['keyword'] ?? null,
-            'ingredient' => $args['ingredient'] ?? null,
-        ]);
+        return $this->action->execute($args);
     }
 }

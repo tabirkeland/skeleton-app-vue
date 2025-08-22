@@ -324,26 +324,50 @@ class SearchRecipesActionTest extends TestCase
 
     /**
      * @test
+     * @deprecated This test validates the old OR behavior for multiple ingredients
+     * The new requirement is to use AND logic - see it_handles_multiple_ingredients_with_and_logic
      */
-    public function it_handles_multiple_ingredients_with_comma_separation()
+    public function it_handles_multiple_ingredients_with_comma_separation_old_behavior()
     {
-        $recipe1 = Recipe::factory()->create(['name' => 'Potato Soup']);
+        // This test is kept for historical reference but should be removed
+        // once the AND logic is fully validated
+        $this->markTestSkipped('Old OR behavior test - keeping for reference');
+    }
+
+    /**
+     * @test
+     */
+    public function it_handles_multiple_ingredients_with_and_logic()
+    {
+        // Recipe with both potato AND tomato
+        $recipe1 = Recipe::factory()->create(['name' => 'Mixed Vegetable Stew']);
         $recipe1->ingredients()->create(['name' => 'potatoes', 'quantity' => 3]);
+        $recipe1->ingredients()->create(['name' => 'tomatoes', 'quantity' => 2]);
+        $recipe1->ingredients()->create(['name' => 'onions', 'quantity' => 1]);
 
-        $recipe2 = Recipe::factory()->create(['name' => 'Tomato Salad']);
-        $recipe2->ingredients()->create(['name' => 'tomatoes', 'quantity' => 2]);
+        // Recipe with only potato
+        $recipe2 = Recipe::factory()->create(['name' => 'Potato Soup']);
+        $recipe2->ingredients()->create(['name' => 'potatoes', 'quantity' => 3]);
+        $recipe2->ingredients()->create(['name' => 'cream', 'quantity' => 1]);
 
-        $recipe3 = Recipe::factory()->create(['name' => 'Carrot Cake']);
-        $recipe3->ingredients()->create(['name' => 'carrots', 'quantity' => 1]);
+        // Recipe with only tomato
+        $recipe3 = Recipe::factory()->create(['name' => 'Tomato Salad']);
+        $recipe3->ingredients()->create(['name' => 'tomatoes', 'quantity' => 2]);
+        $recipe3->ingredients()->create(['name' => 'lettuce', 'quantity' => 1]);
 
+        // Recipe with neither
+        $recipe4 = Recipe::factory()->create(['name' => 'Carrot Cake']);
+        $recipe4->ingredients()->create(['name' => 'carrots', 'quantity' => 1]);
+
+        // Search for recipes with BOTH potato AND tomato
         $query = $this->action->execute([
             'ingredient' => 'potato,tomato',
         ]);
         $result = $query->get();
 
-        $this->assertEquals(2, $result->count());
-        $names = $result->pluck('name')->toArray();
-        $this->assertEqualsCanonicalizing(['Potato Soup', 'Tomato Salad'], $names);
+        // Should only return the recipe that has BOTH ingredients
+        $this->assertEquals(1, $result->count());
+        $this->assertEquals('Mixed Vegetable Stew', $result->first()->name);
     }
 
     /**
@@ -435,6 +459,98 @@ class SearchRecipesActionTest extends TestCase
         $this->assertEqualsCanonicalizing(
             ['Chocolate Cake', 'Vanilla Cake', 'Salad', 'Cookies'],
             $names
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function it_validates_and_logic_per_requirements_document()
+    {
+        // This test validates the exact example from section 2.2 of the requirements:
+        // email: foo@bar.com, ingredient: potato, keyword: scallop
+        // Should match recipes with ALL three conditions
+
+        // Recipe that matches ALL conditions
+        $matchingRecipe = Recipe::factory()->create([
+            'name' => 'Scallop and Potato Gratin',
+            'description' => 'A delicious seafood dish',
+        ]);
+        $matchingRecipe->authors()->create(['name' => 'Chef', 'email' => 'foo@bar.com']);
+        $matchingRecipe->ingredients()->create(['name' => 'potatoes', 'quantity' => 3]);
+        $matchingRecipe->ingredients()->create(['name' => 'scallops', 'quantity' => 1]);
+
+        // Recipe missing the author email
+        $noAuthor = Recipe::factory()->create([
+            'name' => 'Scallop and Potato Casserole',
+            'description' => 'Another seafood dish',
+        ]);
+        $noAuthor->authors()->create(['name' => 'Other Chef', 'email' => 'other@example.com']);
+        $noAuthor->ingredients()->create(['name' => 'potatoes', 'quantity' => 2]);
+
+        // Recipe missing the ingredient
+        $noIngredient = Recipe::factory()->create([
+            'name' => 'Scallop Pasta',
+            'description' => 'Seafood pasta',
+        ]);
+        $noIngredient->authors()->create(['name' => 'Chef', 'email' => 'foo@bar.com']);
+        $noIngredient->ingredients()->create(['name' => 'pasta', 'quantity' => 1]);
+
+        // Recipe missing the keyword
+        $noKeyword = Recipe::factory()->create([
+            'name' => 'Potato Soup',
+            'description' => 'Hearty soup',
+        ]);
+        $noKeyword->authors()->create(['name' => 'Chef', 'email' => 'foo@bar.com']);
+        $noKeyword->ingredients()->create(['name' => 'potatoes', 'quantity' => 4]);
+
+        // Execute search with all three filters
+        $query = $this->action->execute([
+            'author_email' => 'foo@bar.com',
+            'ingredient' => 'potato',
+            'keyword' => 'scallop',
+        ]);
+        $result = $query->get();
+
+        // Should only return the recipe that matches ALL conditions
+        $this->assertEquals(1, $result->count(), 'Should return exactly one recipe matching all conditions');
+        $this->assertEquals('Scallop and Potato Gratin', $result->first()->name);
+    }
+
+    /**
+     * @test
+     */
+    public function it_supports_partial_ingredient_matching_per_requirements()
+    {
+        // This test validates the requirement: "Ingredient - this could be a partial match; 
+        // for example, 'potato' should match '3 large potatoes' in the ingredients list"
+
+        $recipe1 = Recipe::factory()->create(['name' => 'Mashed Potatoes']);
+        $recipe1->ingredients()->create(['name' => '3 large potatoes', 'quantity' => 3, 'unit' => 'large']);
+        $recipe1->ingredients()->create(['name' => 'butter', 'quantity' => 2, 'unit' => 'tbsp']);
+
+        $recipe2 = Recipe::factory()->create(['name' => 'Sweet Potato Pie']);
+        $recipe2->ingredients()->create(['name' => 'sweet potatoes', 'quantity' => 4]);
+        $recipe2->ingredients()->create(['name' => 'sugar', 'quantity' => 1, 'unit' => 'cup']);
+
+        $recipe3 = Recipe::factory()->create(['name' => 'Potato and Cheese Gratin']);
+        $recipe3->ingredients()->create(['name' => 'russet potatoes, thinly sliced', 'quantity' => 5]);
+        $recipe3->ingredients()->create(['name' => 'cheese', 'quantity' => 2, 'unit' => 'cups']);
+
+        $recipe4 = Recipe::factory()->create(['name' => 'Carrot Soup']);
+        $recipe4->ingredients()->create(['name' => 'carrots', 'quantity' => 6]);
+        $recipe4->ingredients()->create(['name' => 'onion', 'quantity' => 1]);
+
+        // Search for "potato" should match all recipes with "potato" in ingredient names
+        $query = $this->action->execute(['ingredient' => 'potato']);
+        $result = $query->get();
+
+        $this->assertEquals(3, $result->count(), 'Should match all recipes with potato in ingredients');
+        $names = $result->pluck('name')->toArray();
+        $this->assertEqualsCanonicalizing(
+            ['Mashed Potatoes', 'Sweet Potato Pie', 'Potato and Cheese Gratin'],
+            $names,
+            'Should match all variations of potato ingredients'
         );
     }
 
