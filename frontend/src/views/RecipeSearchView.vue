@@ -16,15 +16,23 @@
 
     <!-- Search Form -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 md:p-8"
+      <div class="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 md:p-8"
            style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)">
+        <!-- Loading Overlay -->
+        <div v-if="loading" class="absolute inset-0 bg-white/80 flex items-center justify-center z-20 rounded-2xl">
+          <div class="text-center">
+            <Loader2 class="animate-spin text-alaskan-500 mx-auto mb-2" :size="32" />
+            <p class="text-sm text-gray-600">Searching recipes...</p>
+          </div>
+        </div>
+        
         <!-- Keyword Search (Always Visible) -->
-        <div class="space-y-3 mb-8">
+        <div class="relative space-y-3 mb-8">
           <label for="keyword" class="flex items-center gap-2 text-lg font-semibold text-gray-800">
             <Search :size="20" class="text-alaskan-600" />
             Search Recipes
           </label>
-          <div class="flex">
+          <div class="flex items-center">
             <input
               id="keyword"
               v-model="searchParams.keyword"
@@ -33,143 +41,187 @@
               placeholder="What would you like to cook today?"
               @keydown.enter="executeSearch"
               :disabled="loading"
-              class="flex-1 px-6 py-4 text-lg border-2 border-gray-200 rounded-l-xl focus:ring-4 focus:ring-alaskan-500/20 focus:border-alaskan-500 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+              class="flex-1 h-14 px-6 text-lg border-2 border-gray-200 rounded-l-xl focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
             >
             <button
               @click="executeSearch"
               :disabled="loading || !searchParams.keyword.trim()"
-              class="px-6 bg-alaskan-500 hover:bg-alaskan-600 text-white rounded-r-xl border-2 border-alaskan-500 hover:border-alaskan-600 transition-all duration-200 focus:ring-4 focus:ring-alaskan-500/20 disabled:bg-alaskan-500/50 disabled:border-alaskan-500/50 disabled:cursor-not-allowed disabled:hover:bg-alaskan-500/50"
+              class="h-14 px-4 bg-alaskan-500 hover:bg-alaskan-600 text-white border-2 border-l-0 border-alaskan-500 hover:border-alaskan-600 transition-all duration-200 disabled:bg-alaskan-500/50 disabled:border-alaskan-500/50 disabled:cursor-not-allowed disabled:hover:bg-alaskan-500/50"
               :aria-label="loading ? 'Searching...' : 'Search'"
             >
               <Loader2 v-if="loading" :size="20" class="animate-spin" />
               <Search v-else :size="20" />
             </button>
-          </div>
-        </div>
-
-        <!-- Active Filter Badges -->
-        <div v-if="hasActiveFilters" class="mb-8">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-gray-700">Active Filters</h3>
             <button
-              @click="clearSearch"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
+              @click="toggleFilterMenu"
+              ref="filterMenuRef"
+              class="relative h-14 px-4 bg-white hover:bg-gray-50 text-gray-700 rounded-r-xl border-2 border-l-0 border-gray-200 hover:border-gray-300 transition-all duration-200"
+              :class="{ 'bg-gray-50 border-gray-300': showFilterMenu }"
+              aria-label="Filter options"
             >
-              <X :size="14" />
-              Clear All
+              <ListFilter :size="20" class="text-gray-600" />
+              <span v-if="activeFilterCount > 0" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                {{ activeFilterCount }}
+              </span>
             </button>
           </div>
-          <div class="flex flex-wrap gap-3">
-            <!-- Ingredient Badges -->
+          
+          <!-- Filter Dropdown Menu -->
+          <div v-if="showFilterMenu" class="absolute right-0 top-16 w-56 bg-white rounded-lg shadow-xl border border-gray-300 z-50 transition-all duration-200">
+            <div class="py-2">
+                <div class="px-4 py-2 text-sm font-semibold text-gray-800 border-b border-gray-200">Add Filter</div>
+                <button
+                  @click="selectFilterType('ingredient')"
+                  class="w-full text-left px-4 py-3 hover:bg-alaskan-50 flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                >
+                  <Utensils :size="16" class="text-ocean-600" />
+                  <span>Ingredient</span>
+                </button>
+                <button
+                  @click="selectFilterType('author')"
+                  class="w-full text-left px-4 py-3 hover:bg-alaskan-50 flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                >
+                  <User :size="16" class="text-salmon-600" />
+                  <span>Author</span>
+                </button>
+                <div v-if="hasActiveFilters" class="border-t border-gray-200 mt-2 pt-2">
+                  <button
+                    @click="clearSearch"
+                    class="w-full text-left px-4 py-3 hover:bg-red-50 text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <!-- Applied Filters Panel -->
+        <div v-if="hasActiveFilters" class="bg-gray-50 rounded-lg p-3 mt-3">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-gray-700">Active Filters</h3>
+            <button 
+              @click="clearSearch" 
+              class="text-sm text-salmon-600 hover:text-salmon-700 transition-colors"
+            >
+              Clear all
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <!-- Ingredient Chips -->
             <div
               v-for="(ingredient, index) in searchParams.ingredients"
               :key="`ingredient-${index}`"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-medium transition-all hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golden-100 border border-golden-400 rounded-md text-sm transition-all duration-200 hover:bg-golden-200"
             >
-              <Utensils :size="16" />
-              <span>{{ ingredient }}</span>
+              <Utensils :size="14" class="text-ocean-600" />
+              <span class="text-driftwood-800 font-medium">{{ ingredient }}</span>
               <button
                 @click="removeIngredient(index)"
-                class="hover:bg-white/20 rounded-full p-1 transition-colors"
+                class="ml-1 text-driftwood-700 hover:text-red-600 font-bold text-lg leading-none transition-colors"
                 :aria-label="`Remove ingredient: ${ingredient}`"
               >
-                <X :size="12" />
+                ×
               </button>
             </div>
 
-            <!-- Author Badges -->
+            <!-- Author Chips -->
             <div
               v-for="(author, index) in searchParams.authors"
               :key="`author-${index}`"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg text-sm font-medium transition-all hover:from-purple-600 hover:to-purple-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-golden-100 border border-golden-400 rounded-md text-sm transition-all duration-200 hover:bg-golden-200"
             >
-              <Mail :size="16" />
-              <span>{{ author }}</span>
+              <User :size="14" class="text-salmon-600" />
+              <span class="text-driftwood-800 font-medium">{{ author }}</span>
               <button
                 @click="removeAuthor(index)"
-                class="hover:bg-white/20 rounded-full p-1 transition-colors"
+                class="ml-1 text-driftwood-700 hover:text-red-600 font-bold text-lg leading-none transition-colors"
                 :aria-label="`Remove author: ${author}`"
               >
-                <X :size="12" />
+                ×
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Dynamic Filter Inputs -->
-        <div class="space-y-6 mb-8">
-          <!-- Ingredient Input -->
-          <div v-if="showIngredientInput" class="bg-blue-50/50 rounded-xl p-6 border-2 border-blue-200 transition-all duration-300 ease-in-out">
-            <label for="temp-ingredient" class="flex items-center gap-2 text-base font-semibold text-blue-800 mb-3">
-              <Utensils :size="18" />
-              Add Ingredient
-            </label>
-            <div class="relative">
+        <!-- New Filter Input (Slide-down) -->
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out"
+          enter-from-class="transform -translate-y-2 opacity-0"
+          enter-to-class="transform translate-y-0 opacity-100"
+          leave-active-class="transition-all duration-200 ease-in"
+          leave-from-class="transform translate-y-0 opacity-100"
+          leave-to-class="transform -translate-y-2 opacity-0"
+        >
+          <div v-if="showIngredientInput" class="mt-4 p-4 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
+            <div class="flex items-center gap-3">
+              <Utensils :size="18" class="text-ocean-600" />
               <input
                 id="temp-ingredient"
                 ref="ingredientInput"
                 v-model="tempIngredient"
                 type="text"
-                placeholder="e.g. chocolate, flour, eggs..."
+                autocomplete="off"
+                placeholder="Add ingredient (e.g. chocolate, flour)"
                 @keydown.enter="addIngredient"
-                @blur="addIngredient"
                 @keydown.escape="cancelIngredientInput"
-                class="w-full px-5 py-3 border-2 border-blue-300 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white shadow-sm"
+                class="flex-1 px-3 py-2 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
               >
-              <div class="absolute inset-y-0 right-0 flex items-center pr-4">
-                <span class="text-xs text-gray-500">Press Enter to add</span>
-              </div>
+              <button
+                @click="addIngredient"
+                class="px-4 py-2 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
+              >
+                Add
+              </button>
+              <button
+                @click="cancelIngredientInput"
+                class="p-2 text-driftwood-600 hover:text-driftwood-800 transition-colors"
+                aria-label="Cancel"
+              >
+                <X :size="18" />
+              </button>
             </div>
           </div>
-
-          <!-- Author Input -->
-          <div v-if="showAuthorInput" class="bg-purple-50/50 rounded-xl p-6 border-2 border-purple-200 transition-all duration-300 ease-in-out">
-            <label for="temp-author" class="flex items-center gap-2 text-base font-semibold text-purple-800 mb-3">
-              <Mail :size="18" />
-              Add Author Email
-            </label>
-            <div class="relative">
+        </Transition>
+        
+        <Transition
+          enter-active-class="transition-all duration-200 ease-out"
+          enter-from-class="transform -translate-y-2 opacity-0"
+          enter-to-class="transform translate-y-0 opacity-100"
+          leave-active-class="transition-all duration-200 ease-in"
+          leave-from-class="transform translate-y-0 opacity-100"
+          leave-to-class="transform -translate-y-2 opacity-0"
+        >
+          <div v-if="showAuthorInput" class="mt-4 p-4 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
+            <div class="flex items-center gap-3">
+              <User :size="18" class="text-salmon-600" />
               <input
                 id="temp-author"
                 ref="authorInput"
                 v-model="tempAuthor"
                 type="email"
-                placeholder="chef@example.com"
+                autocomplete="off"
+                placeholder="Add author email"
                 @keydown.enter="addAuthor"
-                @blur="addAuthor"
                 @keydown.escape="cancelAuthorInput"
-                class="w-full px-5 py-3 border-2 border-purple-300 rounded-lg focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white shadow-sm"
+                class="flex-1 px-3 py-2 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
               >
-              <div class="absolute inset-y-0 right-0 flex items-center pr-4">
-                <span class="text-xs text-gray-500">Press Enter to add</span>
-              </div>
+              <button
+                @click="addAuthor"
+                class="px-4 py-2 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
+              >
+                Add
+              </button>
+              <button
+                @click="cancelAuthorInput"
+                class="p-2 text-driftwood-600 hover:text-driftwood-800 transition-colors"
+                aria-label="Cancel"
+              >
+                <X :size="18" />
+              </button>
             </div>
           </div>
-        </div>
-
-        <!-- Filter Addition Section -->
-        <div class="bg-gray-50/50 rounded-xl p-6 border border-gray-100">
-          <h3 class="text-sm font-semibold text-gray-700 mb-4">Add Filters</h3>
-          <div class="flex flex-wrap gap-3">
-            <button
-              v-if="!showIngredientInput"
-              @click="showIngredientInput = true; $nextTick(() => $refs.ingredientInput?.focus())"
-              class="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border border-blue-300 rounded-xl transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-            >
-              <Plus :size="16" />
-              Add Ingredient
-            </button>
-
-            <button
-              v-if="!showAuthorInput"
-              @click="showAuthorInput = true; $nextTick(() => $refs.authorInput?.focus())"
-              class="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border border-purple-300 rounded-xl transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-            >
-              <Plus :size="16" />
-              Add Author
-            </button>
-          </div>
-        </div>
+        </Transition>
       </div>
     </div>
 
@@ -202,10 +254,9 @@
 
     <!-- Search Results -->
     <div v-if="recipes.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
-      <div class="mb-8">
-        <h2 class="text-2xl md:text-3xl font-bold text-gray-900 text-center">
-          Found {{ totalRecipes }} recipe{{ totalRecipes !== 1 ? 's' : '' }}
-        </h2>
+      <!-- Results Count Display -->
+      <div v-if="searchExecuted" class="mb-6">
+        <p class="text-lg text-driftwood-800" v-html="formattedResultsHtml"></p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -236,7 +287,7 @@
     </div>
 
     <!-- No Results -->
-    <div v-if="!loading && !error && !recipes.length && hasSearched" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+    <div v-if="!loading && !error && !recipes.length && searchExecuted" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
       <div class="bg-white rounded-xl shadow-lg p-8 text-center">
         <div class="mb-4">
           <UtensilsCrossed :size="48" class="mx-auto text-gray-400" />
@@ -248,7 +299,7 @@
     </div>
 
     <!-- Welcome State -->
-    <div v-if="!hasSearched && !loading" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+    <div v-if="!hasSearched && !loading && !recipes.length" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
       <div class="bg-white rounded-xl shadow-lg p-8 text-center">
         <div class="mb-4">
           <Rocket :size="48" class="mx-auto text-gray-400" />
@@ -267,7 +318,7 @@ import { useLazyQuery } from '@vue/apollo-composable'
 import { SEARCH_RECIPES } from '../graphql/queries'
 import RecipeCard from '../components/RecipeCard.vue'
 import HeroText from '../components/HeroText.vue'
-import { Search, Utensils, Mail, X, Plus, Trash2, Loader2, FileText, UtensilsCrossed, Rocket } from 'lucide-vue-next'
+import { Search, Utensils, X, Loader2, FileText, UtensilsCrossed, Rocket, ListFilter, User } from 'lucide-vue-next'
 
 // Reactive search parameters
 const searchParams = reactive({
@@ -291,11 +342,20 @@ const currentPage = ref(1)
 const hasNextPage = ref(false)
 const hasSearched = ref(false)
 const loadingMore = ref(false)
+const isTyping = ref(false) // Track if user is typing
+
+// Filter dropdown state
+const showFilterMenu = ref(false)
+const filterMenuRef = ref(null)
+const selectedFilterType = ref(null)
+const tempFilterValue = ref('')
 
 // Execute search function - called on Enter key or button click from search input
 const executeSearch = () => {
   // Only execute if not already loading
   if (!loading.value) {
+    searchExecuted.value = true // Mark that a search has been executed
+    lastSearchedKeyword.value = searchParams.keyword // Capture the keyword at search time
     performSearch(true)
   }
 }
@@ -303,6 +363,7 @@ const executeSearch = () => {
 // Execute search when filters change (immediate execution)
 const executeFilterSearch = () => {
   if (!loading.value) {
+    searchExecuted.value = true // Mark that a search has been executed
     performSearch(true)
   }
 }
@@ -337,6 +398,39 @@ const hasActiveFilters = computed(() => {
   return searchParams.ingredients.length > 0 || searchParams.authors.length > 0
 })
 
+const activeFilterCount = computed(() => {
+  return searchParams.ingredients.length + searchParams.authors.length
+})
+
+// Separate tracking for whether a search has been executed
+const searchExecuted = ref(false)
+const lastSearchedKeyword = ref('')  // Store the keyword from the last executed search
+
+const formattedResultsText = computed(() => {
+  // Only show results text after search has been executed
+  if (!searchExecuted.value || loading.value) return ''
+  
+  const parts = []
+  if (lastSearchedKeyword.value) {
+    parts.push(`"${lastSearchedKeyword.value}"`)
+  }
+  searchParams.ingredients.forEach(i => parts.push(`"${i}"`))
+  searchParams.authors.forEach(a => parts.push(`"${a}"`))
+  
+  if (totalRecipes.value === 0) {
+    return 'No recipes found'
+  } else if (totalRecipes.value === 1) {
+    return 'Found 1 recipe' + (parts.length ? ` for ${parts.join(' and ')}` : '')
+  } else {
+    const prefix = parts.length ? `Showing ${totalRecipes.value} results for ` : `Showing ${totalRecipes.value} recipes`
+    return parts.length ? prefix + parts.join(' and ') : prefix
+  }
+})
+
+const formattedResultsHtml = computed(() => {
+  return formattedResultsText.value.replace(/"([^"]+)"/g, '<span class="font-medium">"$1"</span>')
+})
+
 // Watch for query results
 const updateRecipesFromResult = (queryResult, append = false) => {
   if (queryResult?.recipes) {
@@ -364,7 +458,6 @@ watch(result, (newResult) => {
 const performSearch = (reset = true) => {
   if (reset) {
     searchParams.page = 1
-    recipes.value = []
   }
 
   if (hasAnySearchParams.value) {
@@ -374,6 +467,7 @@ const performSearch = (reset = true) => {
       if (hasSearched.value) {
         refetch(variables)
       } else {
+        recipes.value = []
         load(null, { variables })
       }
     } catch (err) {
@@ -418,8 +512,12 @@ const clearSearch = () => {
   tempAuthor.value = ''
   showIngredientInput.value = false
   showAuthorInput.value = false
-  recipes.value = []
-  hasSearched.value = false
+  searchExecuted.value = false // Reset search execution flag
+  lastSearchedKeyword.value = '' // Clear the last searched keyword
+  
+  // Reload recipes with empty search params (like page load)
+  const variables = getQueryVariables()
+  refetch(variables)
 }
 
 // Filter management methods
@@ -463,12 +561,72 @@ const cancelAuthorInput = () => {
   showAuthorInput.value = false
 }
 
+// Filter dropdown methods
+const toggleFilterMenu = () => {
+  showFilterMenu.value = !showFilterMenu.value
+  if (!showFilterMenu.value) {
+    selectedFilterType.value = null
+    tempFilterValue.value = ''
+  }
+}
+
+const selectFilterType = (type) => {
+  selectedFilterType.value = type
+  tempFilterValue.value = ''
+  showFilterMenu.value = false
+  if (type === 'ingredient') {
+    showIngredientInput.value = true
+    setTimeout(() => document.getElementById('temp-filter-input')?.focus(), 100)
+  } else if (type === 'author') {
+    showAuthorInput.value = true
+    setTimeout(() => document.getElementById('temp-filter-input')?.focus(), 100)
+  }
+}
+
+const addFilterFromDropdown = () => {
+  const value = tempFilterValue.value.trim()
+  if (!value) return
+  
+  if (selectedFilterType.value === 'ingredient' && !searchParams.ingredients.includes(value)) {
+    searchParams.ingredients.push(value)
+    executeFilterSearch()
+  } else if (selectedFilterType.value === 'author' && !searchParams.authors.includes(value)) {
+    searchParams.authors.push(value)
+    executeFilterSearch()
+  }
+  
+  tempFilterValue.value = ''
+  selectedFilterType.value = null
+}
+
+const cancelFilterInput = () => {
+  tempFilterValue.value = ''
+  selectedFilterType.value = null
+}
+
+// Close dropdown when clicking outside
+const handleClickOutside = (event) => {
+  if (filterMenuRef.value && !filterMenuRef.value.contains(event.target)) {
+    showFilterMenu.value = false
+  }
+}
+
 // Component is ready
 onMounted(() => {
   // Load initial recipes on page load with current variables
   const variables = getQueryVariables()
   load(null, { variables })
+  
+  // Add click outside listener for dropdown
+  document.addEventListener('click', handleClickOutside)
 })
+
+// Cleanup
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+import { onUnmounted } from 'vue'
 </script>
 
 <style scoped>

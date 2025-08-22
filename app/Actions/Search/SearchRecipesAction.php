@@ -100,7 +100,7 @@ class SearchRecipesAction implements Action
         // Split by comma and normalize each email
         return array_filter(
             array_map(
-                fn($email) => $this->normalizeEmail($email),
+                fn ($email) => $this->normalizeEmail($email),
                 explode(',', $emails)
             )
         );
@@ -132,7 +132,7 @@ class SearchRecipesAction implements Action
         // Split by comma and normalize each ingredient
         return array_filter(
             array_map(
-                fn($ingredient) => $this->normalizeIngredient($ingredient),
+                fn ($ingredient) => $this->normalizeIngredient($ingredient),
                 explode(',', $ingredients)
             )
         );
@@ -151,7 +151,7 @@ class SearchRecipesAction implements Action
             if (isset($filters['ingredients'])) {
                 $ingredients = $filters['ingredients'];
                 unset($filters['ingredients']);
-                
+
                 // Use withAnyIngredient for multiple ingredients (OR logic)
                 if (count($ingredients) > 1) {
                     $query = $query->withAnyIngredient($ingredients);
@@ -159,12 +159,12 @@ class SearchRecipesAction implements Action
                     $query = $query->withIngredient($ingredients[0]);
                 }
             }
-            
+
             // Handle multiple author emails separately
             if (isset($filters['author_emails'])) {
                 $emails = $filters['author_emails'];
                 unset($filters['author_emails']);
-                
+
                 // Use withAnyAuthor for multiple emails (OR logic)
                 if (count($emails) > 1) {
                     $query = $query->withAnyAuthor($emails);
@@ -172,7 +172,7 @@ class SearchRecipesAction implements Action
                     $query = $query->byAuthor($emails[0]);
                 }
             }
-            
+
             // Apply other filters
             if (! empty($filters)) {
                 $query = $query->search($filters);

@@ -18,7 +18,8 @@ frontend/
 │   ├── apollo/          # Apollo Client configuration
 │   │   └── client.js    # GraphQL client setup
 │   ├── components/      # Reusable Vue components
-│   │   └── RecipeCard.vue
+│   │   ├── RecipeCard.vue
+│   │   └── HeroText.vue
 │   ├── graphql/         # GraphQL queries and mutations
 │   │   └── queries.js   # Centralized query definitions
 │   ├── router/          # Vue Router configuration
@@ -36,16 +37,26 @@ frontend/
 ## Features
 
 ### Recipe Search View
-- Real-time search with debouncing (1200ms)
-- Multiple filter types:
-  - Keyword search (name, description, ingredients, steps)
-  - Ingredient filter
-  - Author email filter
-  - Author name filter
-- Responsive grid layout with cards
-- "Load More" pagination
-- Enhanced loading states (button spinner, full page loader)
-- Error handling with retry capability
+- **Search Interface**:
+  - Keyword search with manual execution (Enter key or search button)
+  - Filter dropdown menu with Ingredient and Author filters
+  - Applied filters display with removable golden chips
+  - Active filter count badge on filter button
+- **Enhanced UX**:
+  - Hero section with animated text and branding
+  - Slide-down animations for filter inputs
+  - Loading overlays with spinner during search
+  - Welcome state for initial page load
+  - No results state with helpful messaging
+- **Search Behavior**:
+  - Manual keyword search execution (Enter/button click)
+  - Automatic filter execution when filters are added/removed
+  - Results formatting with highlighted search terms
+  - Maintains search context (shows last searched keyword)
+- **Responsive Design**:
+  - Mobile-optimized touch targets
+  - Responsive grid layout with cards
+  - "Load More" pagination with loading states
 
 ### Recipe Detail View
 - Full recipe display with relational data:

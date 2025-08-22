@@ -52,6 +52,19 @@ export default {
                     700: '#44403c',  // Dark neutral
                     800: '#292524',  // Very dark neutral
                     900: '#1c1917',  // Darkest neutral
+                },
+                'golden': {
+                    DEFAULT: '#ffb600',
+                    50: '#fffaf0',
+                    100: '#fff5e6',
+                    200: '#ffe4b3',
+                    300: '#ffd280',
+                    400: '#ffc14d',
+                    500: '#ffb600',
+                    600: '#e6a300',
+                    700: '#cc9100',
+                    800: '#997000',
+                    900: '#664a00',
                 }
             }
         },
