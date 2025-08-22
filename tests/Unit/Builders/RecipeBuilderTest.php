@@ -435,38 +435,6 @@ class RecipeBuilderTest extends TestCase
     /**
      * @test
      */
-    public function it_searches_with_multiple_ingredients()
-    {
-        $this->createRecipeWithIngredients(
-            ['name' => 'Potato Soup'],
-            [
-                ['name' => 'potatoes', 'quantity' => 3],
-                ['name' => 'onions', 'quantity' => 1],
-            ]
-        );
-        $this->createRecipeWithIngredients(
-            ['name' => 'Tomato Salad'],
-            [
-                ['name' => 'tomatoes', 'quantity' => 2],
-                ['name' => 'lettuce', 'quantity' => 1],
-            ]
-        );
-        $this->createRecipeWithIngredients(
-            ['name' => 'Mixed Vegetables'],
-            [
-                ['name' => 'potatoes', 'quantity' => 1],
-                ['name' => 'tomatoes', 'quantity' => 1],
-            ]
-        );
-
-        $recipes = Recipe::withAnyIngredient(['potato', 'tomato'])->get();
-
-        $this->assertCount(3, $recipes);
-    }
-
-    /**
-     * @test
-     */
     public function it_searches_with_ingredients_array_via_search_method()
     {
         $this->createRecipeWithIngredients(
@@ -525,26 +493,6 @@ class RecipeBuilderTest extends TestCase
     /**
      * @test
      */
-    public function it_searches_by_author_name()
-    {
-        $this->createRecipeWithAuthor(
-            ['name' => 'Recipe by John'],
-            ['name' => 'John Doe', 'email' => 'john@example.com']
-        );
-        $this->createRecipeWithAuthor(
-            ['name' => 'Recipe by Jane'],
-            ['name' => 'Jane Smith', 'email' => 'jane@example.com']
-        );
-
-        $recipes = Recipe::byAuthorName('John')->get();
-
-        $this->assertCount(1, $recipes);
-        $this->assertEquals('Recipe by John', $recipes->first()->name);
-    }
-
-    /**
-     * @test
-     */
     public function it_combines_all_search_filters()
     {
         // Create recipe that matches all filters
@@ -580,7 +528,7 @@ class RecipeBuilderTest extends TestCase
         // Search with multiple filters - only recipe1 should match all
         $recipes = Recipe::search([
             'keyword' => 'chocolate',
-            'author_name' => 'Baker',
+            'author_email' => 'baker@example.com',
             'ingredients' => ['chocolate'],
         ])->get();
 

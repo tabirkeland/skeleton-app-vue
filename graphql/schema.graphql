@@ -214,10 +214,9 @@ input CreateRecipeInput {
 type Query {
     "Search recipes with filters and pagination"
     recipes(
-        author_email: String
-        author_name: String
         keyword: String
         ingredient: String
+        author_email: String
     ): [Recipe!]!
         @paginate(
             defaultCount: 15

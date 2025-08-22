@@ -4,11 +4,11 @@ Vue 3 single-page application with Apollo Client for GraphQL integration.
 
 ## Tech Stack
 
-- **Vue 3**: Composition API with script setup
-- **Apollo Client**: GraphQL client with caching
-- **Vue Router**: Client-side routing
-- **Vite**: Fast build tooling
-- **Vitest**: Unit testing framework
+-   **Vue 3**: Composition API with script setup
+-   **Apollo Client**: GraphQL client with caching
+-   **Vue Router**: Client-side routing
+-   **Vite**: Fast build tooling
+-   **Vitest**: Unit testing framework
 
 ## Project Structure
 
@@ -37,50 +37,54 @@ frontend/
 ## Features
 
 ### Recipe Search View
-- **Search Interface**:
-  - Keyword search with manual execution (Enter key or search button)
-  - Filter dropdown menu with Ingredient and Author filters
-  - Applied filters display with removable golden chips
-  - Active filter count badge on filter button
-- **Enhanced UX**:
-  - Hero section with animated text and branding
-  - Slide-down animations for filter inputs
-  - Loading overlays with spinner during search
-  - Welcome state for initial page load
-  - No results state with helpful messaging
-- **Search Behavior**:
-  - Manual keyword search execution (Enter/button click)
-  - Automatic filter execution when filters are added/removed
-  - Results formatting with highlighted search terms
-  - Maintains search context (shows last searched keyword)
-- **Responsive Design**:
-  - Mobile-optimized touch targets
-  - Responsive grid layout with cards
-  - "Load More" pagination with loading states
+
+-   **Search Interface**:
+    -   Keyword search with manual execution (Enter key or search button)
+    -   Filter dropdown menu with Ingredient and Author filters
+    -   Applied filters display with removable golden chips
+    -   Active filter count badge on filter button
+-   **Enhanced UX**:
+    -   Hero section with animated text and branding
+    -   Slide-down animations for filter inputs
+    -   Loading overlays with spinner during search
+    -   Welcome state for initial page load
+    -   No results state with helpful messaging
+-   **Search Behavior**:
+    -   Manual keyword search execution (Enter/button click)
+    -   Automatic filter execution when filters are added/removed
+    -   Results formatting with highlighted search terms
+    -   Maintains search context (shows last searched keyword)
+-   **Responsive Design**:
+    -   Mobile-optimized touch targets
+    -   Responsive grid layout with cards
+    -   "Load More" pagination with loading states
 
 ### Recipe Detail View
-- Full recipe display with relational data:
-  - Author information
-  - Ingredients list with quantities and units
-  - Step-by-step instructions
-  - Cooking times and servings
-- Breadcrumb navigation
-- Error handling with retry capability
-- Clean, responsive layout
+
+-   Full recipe display with relational data:
+    -   Author information
+    -   Ingredients list with quantities and units
+    -   Step-by-step instructions
+    -   Cooking times and servings
+-   Breadcrumb navigation
+-   Error handling with retry capability
+-   Clean, responsive layout
 
 ### GraphQL Integration
-- Apollo Client with automatic caching
-- Optimized queries with fragments
-- Support for nested relational data
-- Error handling and loading states
-- Pagination support with cursor-based navigation
+
+-   Apollo Client with automatic caching
+-   Optimized queries with fragments
+-   Support for nested relational data
+-   Error handling and loading states
+-   Pagination support with cursor-based navigation
 
 ## Development Setup
 
 ### Prerequisites
-- Node.js 16+ 
-- npm or yarn
-- Backend API running on http://localhost:8888
+
+-   Node.js 16+
+-   npm or yarn
+-   Backend API running on http://localhost:8888
 
 ### Installation
 
@@ -116,100 +120,106 @@ npm run test:unit:watch
 ## GraphQL Queries
 
 ### Search Recipes
+
 ```graphql
 query SearchRecipes {
-  recipes(
-    keyword: "salmon"
-    author_name: "Chef"
-    first: 10
-    page: 1
-  ) {
-    data {
-      id
-      name
-      description
-      slug
-      primary_author {
-        name
-        email
-      }
-      ingredient_count
-      step_count
+    recipes(
+        keyword: "salmon"
+        author_email: "test@test.com"
+        first: 10
+        page: 1
+    ) {
+        data {
+            id
+            name
+            description
+            slug
+            primary_author {
+                name
+                email
+            }
+            ingredient_count
+            step_count
+        }
+        paginatorInfo {
+            hasMorePages
+            total
+        }
     }
-    paginatorInfo {
-      hasMorePages
-      total
-    }
-  }
 }
 ```
 
 ### Get Recipe Details
+
 ```graphql
 query GetRecipe($slug: String!) {
-  recipe(slug: $slug) {
-    id
-    name
-    description
-    prep_time
-    cook_time
-    servings
-    authors {
-      name
-      email
-      about
+    recipe(slug: $slug) {
+        id
+        name
+        description
+        prep_time
+        cook_time
+        servings
+        authors {
+            name
+            email
+            about
+        }
+        ingredients {
+            name
+            quantity
+            unit
+            formatted
+        }
+        steps {
+            order
+            title
+            description
+        }
     }
-    ingredients {
-      name
-      quantity
-      unit
-      formatted
-    }
-    steps {
-      order
-      title
-      description
-    }
-  }
 }
 ```
 
 ## Component Architecture
 
 ### RecipeCard Component
-- Displays recipe summary information
-- Shows primary author
-- Displays ingredient and step counts
-- Links to recipe detail view
-- Responsive design with hover effects
+
+-   Displays recipe summary information
+-   Shows primary author
+-   Displays ingredient and step counts
+-   Links to recipe detail view
+-   Responsive design with hover effects
 
 ### Search Filters
-- Debounced input for performance
-- Clear filter buttons
-- Visual feedback for active filters
-- Keyboard navigation support
+
+-   Debounced input for performance
+-   Clear filter buttons
+-   Visual feedback for active filters
+-   Keyboard navigation support
 
 ### Error Handling
-- Network error recovery
-- GraphQL error display
-- Retry mechanisms
-- User-friendly error messages
+
+-   Network error recovery
+-   GraphQL error display
+-   Retry mechanisms
+-   User-friendly error messages
 
 ## State Management
 
 Currently using component-level state with Apollo Client's cache for data management. The cache handles:
-- Query result caching
-- Optimistic updates
-- Cache normalization
-- Automatic refetching
+
+-   Query result caching
+-   Optimistic updates
+-   Cache normalization
+-   Automatic refetching
 
 ## Styling
 
-- Utility-first CSS approach
-- Responsive design patterns
-- Consistent color scheme
-- Accessible contrast ratios
-- Mobile-first approach
+-   Utility-first CSS approach
+-   Responsive design patterns
+-   Consistent color scheme
+-   Accessible contrast ratios
+-   Mobile-first approach
 
 ## Testing
 
@@ -247,21 +257,21 @@ VITE_GRAPHQL_ENDPOINT=http://localhost:8888/graphql
 
 ## Performance Optimizations
 
-- Lazy loading of routes
-- Apollo Client query caching
-- Debounced search inputs
-- Optimized bundle splitting
-- Image lazy loading (when implemented)
+-   Lazy loading of routes
+-   Apollo Client query caching
+-   Debounced search inputs
+-   Optimized bundle splitting
+-   Image lazy loading (when implemented)
 
 ## Future Enhancements
 
-- [ ] Add unit test coverage
-- [ ] Implement E2E tests
-- [ ] Add recipe image display
-- [ ] Implement recipe favoriting
-- [ ] Add print-friendly recipe view
-- [ ] Implement recipe sharing
-- [ ] Add nutritional information display
-- [ ] Implement advanced filtering UI
-- [ ] Add recipe collections/lists
-- [ ] Implement user authentication
+-   [ ] Add unit test coverage
+-   [ ] Implement E2E tests
+-   [ ] Add recipe image display
+-   [ ] Implement recipe favoriting
+-   [ ] Add print-friendly recipe view
+-   [ ] Implement recipe sharing
+-   [ ] Add nutritional information display
+-   [ ] Implement advanced filtering UI
+-   [ ] Add recipe collections/lists
+-   [ ] Implement user authentication

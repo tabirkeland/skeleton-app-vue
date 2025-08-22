@@ -17,7 +17,7 @@ class RecipeBuilder extends Builder
     }
 
     /**
-     * Search with any of the author emails.
+     * Search with any of the author emails (OR logic).
      */
     public function withAnyAuthor(array $emails): self
     {
@@ -27,31 +27,21 @@ class RecipeBuilder extends Builder
     }
 
     /**
-     * Search by author name through relationship.
-     */
-    public function byAuthorName(string $name): self
-    {
-        return $this->whereHas('authors', function ($query) use ($name) {
-            $query->where('name', 'LIKE', "%{$name}%");
-        });
-    }
-
-    /**
      * Search by keyword across multiple fields.
      * Searches in: recipe.name, recipe.description, ingredients.name, steps.title
      */
     public function searchKeyword(string $keyword): self
     {
-        $searchTerm = "%{$keyword}%";
+        $search = "%{$keyword}%";
 
-        return $this->where(function ($query) use ($searchTerm) {
-            $query->where('name', 'LIKE', $searchTerm)
-                ->orWhere('description', 'LIKE', $searchTerm)
-                ->orWhereHas('ingredients', function ($q) use ($searchTerm) {
-                    $q->where('name', 'LIKE', $searchTerm);
+        return $this->where(function ($query) use ($search) {
+            $query->where('name', 'LIKE', $search)
+                ->orWhere('description', 'LIKE', $search)
+                ->orWhereHas('ingredients', function ($q) use ($search) {
+                    $q->where('name', 'LIKE', $search);
                 })
-                ->orWhereHas('steps', function ($q) use ($searchTerm) {
-                    $q->where('title', 'LIKE', $searchTerm);
+                ->orWhereHas('steps', function ($q) use ($search) {
+                    $q->where('title', 'LIKE', $search);
                 });
         });
     }
@@ -79,26 +69,13 @@ class RecipeBuilder extends Builder
     }
 
     /**
-     * Search with any of the ingredients.
-     */
-    public function withAnyIngredient(array $ingredients): self
-    {
-        return $this->whereHas('ingredients', function ($query) use ($ingredients) {
-            $query->where(function ($q) use ($ingredients) {
-                foreach ($ingredients as $ingredient) {
-                    $q->orWhere('name', 'LIKE', "%{$ingredient}%");
-                }
-            });
-        });
-    }
-
-    /**
      * Combined search with filters.
      * This is the single source of truth for search logic.
      */
     public function search(array $filters): self
     {
         // Handle author emails (supports arrays and single values)
+        // Multiple author emails use OR logic (any of the authors)
         if (!empty($filters['author_emails'])) {
             if (is_array($filters['author_emails'])) {
                 if (count($filters['author_emails']) > 1) {
@@ -111,11 +88,6 @@ class RecipeBuilder extends Builder
             }
         } elseif (!empty($filters['author_email'])) {
             $this->byAuthor($filters['author_email']);
-        }
-
-        // Handle author name
-        if (!empty($filters['author_name'])) {
-            $this->byAuthorName($filters['author_name']);
         }
 
         // Handle keyword search across multiple fields

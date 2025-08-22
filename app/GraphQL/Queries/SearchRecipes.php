@@ -2,10 +2,8 @@
 
 namespace App\GraphQL\Queries;
 
-use App\Actions\Search\SearchRecipesAction;
-use GraphQL\Type\Definition\ResolveInfo;
 use Illuminate\Database\Eloquent\Builder;
-use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
+use App\Actions\Search\SearchRecipesAction;
 
 class SearchRecipes
 {
@@ -25,7 +23,7 @@ class SearchRecipes
      *
      * @param  mixed  $root
      */
-    public function __invoke($root, array $args, GraphQLContext $context, ResolveInfo $resolveInfo): Builder
+    public function __invoke($root, array $args): Builder
     {
         return $this->action->execute($args);
     }

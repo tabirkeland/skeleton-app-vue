@@ -324,18 +324,6 @@ class SearchRecipesActionTest extends TestCase
 
     /**
      * @test
-     * @deprecated This test validates the old OR behavior for multiple ingredients
-     * The new requirement is to use AND logic - see it_handles_multiple_ingredients_with_and_logic
-     */
-    public function it_handles_multiple_ingredients_with_comma_separation_old_behavior()
-    {
-        // This test is kept for historical reference but should be removed
-        // once the AND logic is fully validated
-        $this->markTestSkipped('Old OR behavior test - keeping for reference');
-    }
-
-    /**
-     * @test
      */
     public function it_handles_multiple_ingredients_with_and_logic()
     {

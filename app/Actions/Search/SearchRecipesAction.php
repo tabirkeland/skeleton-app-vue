@@ -2,8 +2,9 @@
 
 namespace App\Actions\Search;
 
-use App\Contracts\Action;
 use App\Models\Recipe;
+use App\Contracts\Action;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
 
 class SearchRecipesAction implements Action
@@ -11,10 +12,7 @@ class SearchRecipesAction implements Action
     /**
      * Create a new SearchRecipesAction instance.
      */
-    public function __construct(
-        protected Recipe $recipe
-    ) {
-    }
+    public function __construct(protected Recipe $recipe) { }
 
     /**
      * Execute recipe search with GraphQL-validated parameters.
@@ -41,6 +39,7 @@ class SearchRecipesAction implements Action
      * Parameters are already validated by GraphQL - this handles formatting.
      *
      * @param  array  $parameters GraphQL-validated search parameters
+     *
      * @return array Normalized filters ready for query building
      */
     protected function prepareSearchFilters(array $parameters): array
@@ -50,11 +49,6 @@ class SearchRecipesAction implements Action
         // Normalize author email(s) for consistent searching
         if (!empty($parameters['author_email'])) {
             $filters['author_emails'] = $this->normalizeEmails($parameters['author_email']);
-        }
-
-        // Normalize author name for consistent searching
-        if (!empty($parameters['author_name'])) {
-            $filters['author_name'] = $this->normalizeSearchKeyword($parameters['author_name']);
         }
 
         // Normalize keyword for better search matching
@@ -71,11 +65,33 @@ class SearchRecipesAction implements Action
     }
 
     /**
-     * Normalize email for consistent searching.
+     * Normalize a single value based on type.
+     *
+     * @param string $value The value to normalize
+     * @param bool $lowercase Whether to convert to lowercase
+     * @return string The normalized value
      */
-    private function normalizeEmail(string $email): string
+    private function normalize(string $value, bool $lowercase = false): string
     {
-        return trim(strtolower($email));
+        return Str::of(trim($value))
+            ->when($lowercase, fn ($str) => $str->lower())
+            ->value();
+    }
+
+    /**
+     * Normalize comma-separated values into an array.
+     *
+     * @param string $values Comma-separated values
+     * @param bool $lowercase Whether to convert each value to lowercase
+     * @return array Normalized array of values
+     */
+    private function normalizeMultiple(string $values, bool $lowercase = false): array
+    {
+        return collect(explode(',', $values))
+            ->map(fn ($value) => $this->normalize($value, $lowercase))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**
@@ -83,13 +99,7 @@ class SearchRecipesAction implements Action
      */
     private function normalizeEmails(string $emails): array
     {
-        // Split by comma and normalize each email
-        return array_filter(
-            array_map(
-                fn ($email) => $this->normalizeEmail($email),
-                explode(',', $emails)
-            )
-        );
+        return $this->normalizeMultiple($emails, true);
     }
 
     /**
@@ -97,17 +107,7 @@ class SearchRecipesAction implements Action
      */
     private function normalizeSearchKeyword(string $keyword): string
     {
-        // Trim whitespace and normalize for search
-        return trim($keyword);
-    }
-
-    /**
-     * Normalize ingredient name for consistent matching.
-     */
-    private function normalizeIngredient(string $ingredient): string
-    {
-        // Trim and normalize case for ingredient searching
-        return trim(strtolower($ingredient));
+        return $this->normalize($keyword, false);
     }
 
     /**
@@ -115,13 +115,7 @@ class SearchRecipesAction implements Action
      */
     private function normalizeIngredients(string $ingredients): array
     {
-        // Split by comma and normalize each ingredient
-        return array_filter(
-            array_map(
-                fn ($ingredient) => $this->normalizeIngredient($ingredient),
-                explode(',', $ingredients)
-            )
-        );
+        return $this->normalizeMultiple($ingredients, true);
     }
 
     /**
@@ -138,11 +132,8 @@ class SearchRecipesAction implements Action
         }
 
         // Apply consistent ordering and eager loading
-        $query = $query->popular()
+        return $query->popular()
             ->withCounts()
             ->with(['authors', 'ingredients', 'steps']);
-
-        // Return the query builder for Lighthouse to paginate
-        return $query;
     }
 }

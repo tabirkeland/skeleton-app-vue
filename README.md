@@ -4,7 +4,7 @@ A GraphQL-powered recipe search application demonstrating advanced Laravel patte
 
 ## Features
 
--   🔍 **Advanced Recipe Search**: Search by keyword, ingredient, author email, or author name
+-   🔍 **Advanced Recipe Search**: Search by keyword, ingredient, or author email
 -   🚀 **GraphQL API**: Built with Laravel Lighthouse
 -   🏗️ **Relational Database**: Properly normalized database with related tables
 -   🎯 **Action Pattern**: Clean business logic separation with Action contracts
@@ -179,7 +179,6 @@ query SearchRecipes {
         keyword: "chocolate"
         ingredient: "flour"
         author_email: "chef@example.com"
-        author_name: "Chef Name"
         first: 10
         page: 1
     ) {
