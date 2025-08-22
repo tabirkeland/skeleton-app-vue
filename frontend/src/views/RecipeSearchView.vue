@@ -307,6 +307,7 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const hasNextPage = ref(false)
 const hasSearched = ref(false)
+const isClearingSearch = ref(false) // Track clear operations
 
 // Filter dropdown state
 const showFilterMenu = ref(false)
@@ -409,7 +410,16 @@ const updateRecipesFromResult = (queryResult, append = false) => {
     currentPage.value = data.paginatorInfo.currentPage
     totalPages.value = data.paginatorInfo.lastPage
     hasNextPage.value = data.paginatorInfo.hasMorePages
-    hasSearched.value = true
+    
+    // Only set hasSearched to true if we're not in a clear operation
+    if (!isClearingSearch.value) {
+      hasSearched.value = true
+    }
+    
+    // Reset clear flag after processing
+    if (isClearingSearch.value) {
+      isClearingSearch.value = false
+    }
   }
 }
 
@@ -464,7 +474,8 @@ const updatePerPage = async (perPage) => {
 }
 
 // Clear search
-const clearSearch = () => {
+const clearSearch = async () => {
+  // Clear all search parameters and UI state
   searchParams.keyword = ''
   searchParams.ingredients = []
   searchParams.authors = []
@@ -473,17 +484,54 @@ const clearSearch = () => {
   tempAuthor.value = ''
   showIngredientInput.value = false
   showAuthorInput.value = false
-  searchExecuted.value = false // Reset search execution flag
-  lastSearchedKeyword.value = '' // Clear the last searched keyword
-
-  // Reset to initial state - show 15 random recipes
+  searchExecuted.value = false
+  lastSearchedKeyword.value = ''
+  
+  // Reset search state to initial browse mode
+  hasSearched.value = false
+  
+  // Set flag to prevent updateRecipesFromResult from setting hasSearched back to true
+  isClearingSearch.value = true
+  
+  // Fetch fresh browse results bypassing cache
   const variables = getQueryVariables()
-  refetch(variables)
+  try {
+    await refetch(variables, {
+      fetchPolicy: "network-only"
+    })
+  } catch (error) {
+    console.error('Clear search refetch failed:', error)
+  }
+}
+
+// Helper function to check if we have any active search parameters
+const hasActiveSearchParameters = () => {
+  return searchParams.keyword.trim() !== '' || 
+         searchParams.ingredients.length > 0 || 
+         searchParams.authors.length > 0
 }
 
 // Clear only keyword field
-const clearKeyword = () => {
+const clearKeyword = async () => {
   searchParams.keyword = ''
+  lastSearchedKeyword.value = ''  // Clear the stored keyword for display
+  
+  // If no search parameters remain after clearing keyword, reset to browse mode
+  if (!hasActiveSearchParameters()) {
+    hasSearched.value = false
+    searchExecuted.value = false  // Clear search executed state
+    isClearingSearch.value = true
+    
+    // Fetch fresh browse results bypassing cache (same as clearSearch)
+    try {
+      await refetch(getQueryVariables(), { fetchPolicy: "network-only" })
+    } catch (error) {
+      console.error('Clear keyword refetch failed:', error)
+    }
+  } else {
+    // If other search parameters remain, do normal search
+    performSearch()
+  }
 }
 
 // Filter management methods

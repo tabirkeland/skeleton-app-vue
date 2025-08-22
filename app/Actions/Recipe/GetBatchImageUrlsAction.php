@@ -18,11 +18,12 @@ class GetBatchImageUrlsAction
      * Get image URLs for multiple recipes in a batch.
      * Minimizes API calls by deduplicating search queries.
      *
-     * @param  Collection|array  $recipes Collection or array of Recipe models
-     * @return array<int, string> Map of recipe ID => image URL
+     * @param  Collection<int, Recipe>|array<Recipe>  $recipes Collection or array of Recipe models
+     * @return array<int|string, string> Map of recipe ID => image URL
      */
     public function execute(Collection|array $recipes): array
     {
+        /** @var Collection<int, Recipe> $recipes */
         $recipes = collect($recipes);
 
         // Check cache for the entire batch first
@@ -35,11 +36,13 @@ class GetBatchImageUrlsAction
 
         // Separate recipes that already have images from those that need them
         // Use getRawOriginal to avoid triggering the accessor
-        $recipesWithImages = $recipes->filter(fn ($r) => !empty($r->getRawOriginal('image_url')));
-        $recipesNeedingImages = $recipes->filter(fn ($r) => empty($r->getRawOriginal('image_url')));
+        /** @var Collection<int, Recipe> $recipesWithImages */
+        $recipesWithImages = $recipes->filter(fn (Recipe $r) => !empty($r->getRawOriginal('image_url')));
+        /** @var Collection<int, Recipe> $recipesNeedingImages */
+        $recipesNeedingImages = $recipes->filter(fn (Recipe $r) => empty($r->getRawOriginal('image_url')));
 
         // Start with existing images
-        $imageMap = $recipesWithImages->mapWithKeys(fn ($r) => [$r->id => $r->getRawOriginal('image_url')])->all();
+        $imageMap = $recipesWithImages->mapWithKeys(fn (Recipe $r) => [$r->id => $r->getRawOriginal('image_url')])->all();
 
         if ($recipesNeedingImages->isEmpty()) {
             return $imageMap;
@@ -55,7 +58,7 @@ class GetBatchImageUrlsAction
         $queryResults = $this->fetchImagesForQueries($uniqueQueries);
 
         // Map results back to recipes
-        $recipesNeedingImages->each(function ($recipe) use ($recipeQueries, $queryResults, &$imageMap) {
+        $recipesNeedingImages->each(function (Recipe $recipe) use ($recipeQueries, $queryResults, &$imageMap) {
             $query = $recipeQueries->get($recipe->id);
             $normalizedQuery = $this->normalizeQuery($query);
 
@@ -72,12 +75,12 @@ class GetBatchImageUrlsAction
     /**
      * Build search queries for recipes based on their attributes.
      *
-     * @param  Collection  $recipes
-     * @return Collection Map of recipe ID => search query
+     * @param  Collection<int, Recipe>  $recipes
+     * @return Collection<int|string, string> Map of recipe ID => search query
      */
     protected function buildRecipeQueries(Collection $recipes): Collection
     {
-        return $recipes->mapWithKeys(function ($recipe) {
+        return $recipes->mapWithKeys(function (Recipe $recipe) {
             $query = $this->buildSearchQuery($recipe);
 
             return [$recipe->id => $query];
@@ -153,9 +156,6 @@ class GetBatchImageUrlsAction
 
     /**
      * Fetch images for multiple queries efficiently.
-     *
-     * @param  array  $queries
-     * @return array
      */
     protected function fetchImagesForQueries(array $queries): array
     {
@@ -173,13 +173,12 @@ class GetBatchImageUrlsAction
     /**
      * Generate batch cache key based on recipe IDs and attributes.
      *
-     * @param  Collection  $recipes
-     * @return string
+     * @param  Collection<int, Recipe>  $recipes
      */
     protected function getBatchCacheKey(Collection $recipes): string
     {
         // Create a hash of recipe IDs and key attributes that affect image selection
-        $key = $recipes->map(fn ($r) => "{$r->id}:{$r->name}:{$r->category}")
+        $key = $recipes->map(fn (Recipe $r) => "{$r->id}:{$r->name}:{$r->category}")
             ->sort()
             ->implode('|');
 
@@ -188,9 +187,6 @@ class GetBatchImageUrlsAction
 
     /**
      * Normalize a query for consistent matching.
-     *
-     * @param  string  $query
-     * @return string
      */
     protected function normalizeQuery(string $query): string
     {
@@ -203,9 +199,6 @@ class GetBatchImageUrlsAction
 
     /**
      * Get default placeholder URL.
-     *
-     * @param  Recipe  $recipe
-     * @return string
      */
     protected function getDefaultPlaceholder(Recipe $recipe): string
     {

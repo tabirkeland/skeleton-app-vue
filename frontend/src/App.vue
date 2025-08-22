@@ -8,7 +8,7 @@ const route = useRoute()
 <template>
   <div id="app" class="min-h-screen bg-gray-50">
     <!-- Minimal Navigation - only show on recipe detail pages -->
-    <nav v-if="route.name === 'recipe-detail'" class="relative z-10">
+    <nav v-if="route.name === 'recipe-detail'" class="sticky top-0 z-50 bg-gray-50/95 backdrop-blur-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-4">
           <router-link 
