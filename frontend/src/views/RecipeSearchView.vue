@@ -1,11 +1,11 @@
 <template>
   <div class="min-h-screen">
     <!-- Hero Section -->
-    <div class="relative text-white pb-16 pt-12 min-h-[60vh] bg-cover bg-center bg-no-repeat" 
+    <div class="relative text-white pb-16 pt-12 min-h-[60vh] bg-cover bg-center bg-no-repeat"
          style="background-image: url('/src/assets/hero-background.png')">
       <!-- Optional overlay for better text readability -->
       <div class="absolute inset-0 bg-black/20"></div>
-      
+
       <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div class="flex justify-center">
           <img src="/src/assets/logo-text.png" alt="Wild Alaskan Recipes" class="h-40 md:h-56 lg:h-64 filter brightness-0 invert drop-shadow-lg">
@@ -24,18 +24,26 @@
             <Search :size="20" class="text-alaskan-600" />
             Search Recipes
           </label>
-          <div class="relative">
+          <div class="flex">
             <input
               id="keyword"
               v-model="searchParams.keyword"
               type="text"
+              autocomplete="off"
               placeholder="What would you like to cook today?"
-              @input="debouncedSearch"
-              class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-alaskan-500/20 focus:border-alaskan-500 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300"
+              @keydown.enter="executeSearch"
+              :disabled="loading"
+              class="flex-1 px-6 py-4 text-lg border-2 border-gray-200 rounded-l-xl focus:ring-4 focus:ring-alaskan-500/20 focus:border-alaskan-500 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
             >
-            <div class="absolute inset-y-0 right-0 flex items-center pr-6">
-              <Search :size="20" class="text-gray-400" />
-            </div>
+            <button
+              @click="executeSearch"
+              :disabled="loading || !searchParams.keyword.trim()"
+              class="px-6 bg-alaskan-500 hover:bg-alaskan-600 text-white rounded-r-xl border-2 border-alaskan-500 hover:border-alaskan-600 transition-all duration-200 focus:ring-4 focus:ring-alaskan-500/20 disabled:bg-alaskan-500/50 disabled:border-alaskan-500/50 disabled:cursor-not-allowed disabled:hover:bg-alaskan-500/50"
+              :aria-label="loading ? 'Searching...' : 'Search'"
+            >
+              <Loader2 v-if="loading" :size="20" class="animate-spin" />
+              <Search v-else :size="20" />
+            </button>
           </div>
         </div>
 
@@ -68,7 +76,7 @@
                 <X :size="12" />
               </button>
             </div>
-            
+
             <!-- Author Badges -->
             <div
               v-for="(author, index) in searchParams.authors"
@@ -151,7 +159,7 @@
               <Plus :size="16" />
               Add Ingredient
             </button>
-            
+
             <button
               v-if="!showAuthorInput"
               @click="showAuthorInput = true; $nextTick(() => $refs.authorInput?.focus())"
@@ -284,30 +292,35 @@ const hasNextPage = ref(false)
 const hasSearched = ref(false)
 const loadingMore = ref(false)
 
-// Debounce search function
-let searchTimeout = null
-const debouncedSearch = () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    if (!loading.value) {
-      performSearch(true)
-    }
-  }, 1200)
+// Execute search function - called on Enter key or button click from search input
+const executeSearch = () => {
+  // Only execute if not already loading
+  if (!loading.value) {
+    performSearch(true)
+  }
 }
 
-// Reactive variables object
-const queryVariables = computed(() => ({
+// Execute search when filters change (immediate execution)
+const executeFilterSearch = () => {
+  if (!loading.value) {
+    performSearch(true)
+  }
+}
+
+// Get current variables for query - returns static object, not reactive
+const getQueryVariables = () => ({
   author_email: searchParams.authors.length > 0 ? searchParams.authors.join(',') : null,
   keyword: searchParams.keyword || null,
   ingredient: searchParams.ingredients.length > 0 ? searchParams.ingredients.join(',') : null,
   first: searchParams.perPage,
   page: searchParams.page
-}))
+})
 
 // GraphQL lazy query - doesn't execute until called
+// Don't pass variables here to prevent any reactive tracking
 const { result, loading, error, load, refetch, fetchMore } = useLazyQuery(
   SEARCH_RECIPES,
-  queryVariables,
+  null,  // No variables passed here - we'll pass them when calling load/refetch
   {
     errorPolicy: 'all',
     fetchPolicy: 'cache-and-network',
@@ -355,12 +368,13 @@ const performSearch = (reset = true) => {
   }
 
   if (hasAnySearchParams.value) {
-    // Use load for first time or refetch for subsequent calls
+    // Pass variables directly when calling load/refetch
+    const variables = getQueryVariables()
     try {
       if (hasSearched.value) {
-        refetch()
+        refetch(variables)
       } else {
-        load()
+        load(null, { variables })
       }
     } catch (err) {
       console.error('Error in performSearch:', err)
@@ -378,16 +392,10 @@ const loadMore = async () => {
   loadingMore.value = true
   try {
     const nextPage = currentPage.value + 1
-    const variables = {
-      author_email: searchParams.authors.length > 0 ? searchParams.authors.join(',') : null,
-      keyword: searchParams.keyword || null,
-      ingredient: searchParams.ingredients.length > 0 ? searchParams.ingredients.join(',') : null,
-      first: searchParams.perPage,
-      page: nextPage
-    }
+    searchParams.page = nextPage  // Update page for getQueryVariables
 
     const { data } = await fetchMore({
-      variables
+      variables: getQueryVariables()
     })
 
     if (data?.recipes) {
@@ -419,7 +427,7 @@ const addIngredient = () => {
   const ingredient = tempIngredient.value.trim()
   if (ingredient && !searchParams.ingredients.includes(ingredient)) {
     searchParams.ingredients.push(ingredient)
-    debouncedSearch()
+    executeFilterSearch()
   }
   tempIngredient.value = ''
   showIngredientInput.value = false
@@ -427,14 +435,14 @@ const addIngredient = () => {
 
 const removeIngredient = (index) => {
   searchParams.ingredients.splice(index, 1)
-  debouncedSearch()
+  executeFilterSearch()
 }
 
 const addAuthor = () => {
   const author = tempAuthor.value.trim()
   if (author && !searchParams.authors.includes(author)) {
     searchParams.authors.push(author)
-    debouncedSearch()
+    executeFilterSearch()
   }
   tempAuthor.value = ''
   showAuthorInput.value = false
@@ -442,7 +450,7 @@ const addAuthor = () => {
 
 const removeAuthor = (index) => {
   searchParams.authors.splice(index, 1)
-  debouncedSearch()
+  executeFilterSearch()
 }
 
 const cancelIngredientInput = () => {
@@ -457,8 +465,9 @@ const cancelAuthorInput = () => {
 
 // Component is ready
 onMounted(() => {
-  // Load initial recipes on page load
-  load()
+  // Load initial recipes on page load with current variables
+  const variables = getQueryVariables()
+  load(null, { variables })
 })
 </script>
 
