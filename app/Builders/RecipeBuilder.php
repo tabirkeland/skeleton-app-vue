@@ -38,6 +38,7 @@ class RecipeBuilder extends Builder
 
     /**
      * Search by keyword across multiple fields.
+     * Searches in: recipe.name, recipe.description, ingredients.name, steps.title
      */
     public function searchKeyword(string $keyword): self
     {
@@ -50,8 +51,7 @@ class RecipeBuilder extends Builder
                     $q->where('name', 'LIKE', $searchTerm);
                 })
                 ->orWhereHas('steps', function ($q) use ($searchTerm) {
-                    $q->where('title', 'LIKE', $searchTerm)
-                        ->orWhere('description', 'LIKE', $searchTerm);
+                    $q->where('title', 'LIKE', $searchTerm);
                 });
         });
     }
@@ -94,22 +94,51 @@ class RecipeBuilder extends Builder
 
     /**
      * Combined search with filters.
+     * This is the single source of truth for search logic.
      */
     public function search(array $filters): self
     {
-        return $this->when(
-            !empty($filters['author_email']),
-            fn ($query) => $query->byAuthor($filters['author_email'])
-        )->when(
-            !empty($filters['author_name']),
-            fn ($query) => $query->byAuthorName($filters['author_name'])
-        )->when(
-            !empty($filters['keyword']),
-            fn ($query) => $query->searchKeyword($filters['keyword'])
-        )->when(
-            !empty($filters['ingredient']),
-            fn ($query) => $query->withIngredient($filters['ingredient'])
-        );
+        // Handle author emails (supports arrays and single values)
+        if (!empty($filters['author_emails'])) {
+            if (is_array($filters['author_emails'])) {
+                if (count($filters['author_emails']) > 1) {
+                    $this->withAnyAuthor($filters['author_emails']);
+                } else {
+                    $this->byAuthor($filters['author_emails'][0]);
+                }
+            } else {
+                $this->byAuthor($filters['author_emails']);
+            }
+        } elseif (!empty($filters['author_email'])) {
+            $this->byAuthor($filters['author_email']);
+        }
+
+        // Handle author name
+        if (!empty($filters['author_name'])) {
+            $this->byAuthorName($filters['author_name']);
+        }
+
+        // Handle keyword search across multiple fields
+        if (!empty($filters['keyword'])) {
+            $this->searchKeyword($filters['keyword']);
+        }
+
+        // Handle ingredients (supports arrays and single values)
+        if (!empty($filters['ingredients'])) {
+            if (is_array($filters['ingredients'])) {
+                if (count($filters['ingredients']) > 1) {
+                    $this->withAnyIngredient($filters['ingredients']);
+                } else {
+                    $this->withIngredient($filters['ingredients'][0]);
+                }
+            } else {
+                $this->withIngredient($filters['ingredients']);
+            }
+        } elseif (!empty($filters['ingredient'])) {
+            $this->withIngredient($filters['ingredient']);
+        }
+
+        return $this;
     }
 
     /**

@@ -4,8 +4,8 @@ namespace Tests\Unit\Actions;
 
 use App\Actions\Search\SearchRecipesAction;
 use App\Models\Recipe;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Tests\TestCase;
 
 class SearchRecipesActionTest extends TestCase
@@ -23,15 +23,14 @@ class SearchRecipesActionTest extends TestCase
     /**
      * @test
      */
-    public function it_returns_paginated_results()
+    public function it_returns_query_builder()
     {
         Recipe::factory()->count(15)->create();
 
         $result = $this->action->execute([]);
 
-        $this->assertInstanceOf(LengthAwarePaginator::class, $result);
-        $this->assertEquals(15, $result->perPage()); // Default is 15
-        $this->assertEquals(15, $result->total());
+        $this->assertInstanceOf(Builder::class, $result);
+        $this->assertEquals(15, $result->count());
     }
 
     /**
@@ -51,10 +50,11 @@ class SearchRecipesActionTest extends TestCase
         $recipe3->authors()->delete();
         $recipe3->authors()->create(['name' => 'Other', 'email' => 'other@example.com']);
 
-        $result = $this->action->execute(['author_email' => 'chef@example.com']);
+        $query = $this->action->execute(['author_email' => 'chef@example.com']);
+        $result = $query->get();
 
-        $this->assertEquals(2, $result->total());
-        foreach ($result->items() as $recipe) {
+        $this->assertEquals(2, $result->count());
+        foreach ($result as $recipe) {
             $this->assertEquals('chef@example.com', $recipe->author_email);
         }
     }
@@ -68,9 +68,10 @@ class SearchRecipesActionTest extends TestCase
         Recipe::factory()->create(['name' => 'Vanilla Cake']);
         Recipe::factory()->create(['name' => 'Apple Pie']);
 
-        $result = $this->action->execute(['keyword' => 'Cake']);
+        $query = $this->action->execute(['keyword' => 'Cake']);
+        $result = $query->get();
 
-        $this->assertEquals(2, $result->total());
+        $this->assertEquals(2, $result->count());
     }
 
     /**
@@ -90,9 +91,10 @@ class SearchRecipesActionTest extends TestCase
         $recipe3->ingredients()->delete();
         $recipe3->ingredients()->create(['name' => 'chocolate chips', 'quantity' => 2]);
 
-        $result = $this->action->execute(['ingredient' => 'chocolate']);
+        $query = $this->action->execute(['ingredient' => 'chocolate']);
+        $result = $query->get();
 
-        $this->assertEquals(2, $result->total());
+        $this->assertEquals(2, $result->count());
     }
 
     /**
@@ -118,28 +120,31 @@ class SearchRecipesActionTest extends TestCase
         $recipe3->authors()->create(['name' => 'Other', 'email' => 'other@example.com']);
         $recipe3->ingredients()->create(['name' => 'chocolate', 'quantity' => 1]);
 
-        $result = $this->action->execute([
+        $query = $this->action->execute([
             'author_email' => 'chef@example.com',
             'keyword' => 'Chocolate',
             'ingredient' => 'chocolate',
         ]);
+        $result = $query->get();
 
-        $this->assertEquals(1, $result->total());
-        $this->assertEquals('Chocolate Cake', $result->items()[0]->name);
+        $this->assertEquals(1, $result->count());
+        $this->assertEquals('Chocolate Cake', $result->first()->name);
     }
 
     /**
      * @test
      */
-    public function it_respects_custom_per_page_parameter()
+    public function it_returns_query_builder_for_pagination()
     {
         Recipe::factory()->count(20)->create();
 
-        $result = $this->action->execute(['perPage' => 5]);
+        $query = $this->action->execute([]);
 
-        $this->assertEquals(5, $result->perPage());
-        $this->assertEquals(5, $result->count());
-        $this->assertEquals(20, $result->total());
+        // Test that the query builder can be paginated
+        $paginated = $query->paginate(5);
+        $this->assertEquals(5, $paginated->perPage());
+        $this->assertEquals(5, $paginated->count());
+        $this->assertEquals(20, $paginated->total());
     }
 
     /**
@@ -150,9 +155,10 @@ class SearchRecipesActionTest extends TestCase
         $recipe = Recipe::factory()->create();
         $recipe->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
 
-        $result = $this->action->execute(['author_email' => 'CHEF@EXAMPLE.COM']);
+        $query = $this->action->execute(['author_email' => 'CHEF@EXAMPLE.COM']);
+        $result = $query->get();
 
-        $this->assertEquals(1, $result->total());
+        $this->assertEquals(1, $result->count());
     }
 
     /**
@@ -164,12 +170,12 @@ class SearchRecipesActionTest extends TestCase
         $newer = Recipe::factory()->create(['created_at' => now()->subDay()]);
         $newest = Recipe::factory()->create(['created_at' => now()]);
 
-        $result = $this->action->execute([]);
+        $query = $this->action->execute([]);
+        $result = $query->get();
 
-        $items = $result->items();
-        $this->assertEquals($newest->id, $items[0]->id);
-        $this->assertEquals($newer->id, $items[1]->id);
-        $this->assertEquals($older->id, $items[2]->id);
+        $this->assertEquals($newest->id, $result[0]->id);
+        $this->assertEquals($newer->id, $result[1]->id);
+        $this->assertEquals($older->id, $result[2]->id);
     }
 
     /**
@@ -179,10 +185,11 @@ class SearchRecipesActionTest extends TestCase
     {
         Recipe::factory()->count(5)->create();
 
-        $result = $this->action->execute(['keyword' => 'NonExistentKeyword']);
+        $query = $this->action->execute(['keyword' => 'NonExistentKeyword']);
+        $result = $query->get();
 
-        $this->assertEquals(0, $result->total());
-        $this->assertEmpty($result->items());
+        $this->assertEquals(0, $result->count());
+        $this->assertEmpty($result);
     }
 
     /**
@@ -192,9 +199,10 @@ class SearchRecipesActionTest extends TestCase
     {
         Recipe::factory()->count(3)->create();
 
-        $result = $this->action->execute([]);
+        $query = $this->action->execute([]);
+        $result = $query->get();
 
-        $this->assertEquals(3, $result->total());
+        $this->assertEquals(3, $result->count());
     }
 
     /**
@@ -204,13 +212,14 @@ class SearchRecipesActionTest extends TestCase
     {
         Recipe::factory()->count(3)->create();
 
-        $result = $this->action->execute([
+        $query = $this->action->execute([
             'author_email' => null,
             'keyword' => null,
             'ingredient' => null,
         ]);
+        $result = $query->get();
 
-        $this->assertEquals(3, $result->total());
+        $this->assertEquals(3, $result->count());
     }
 
     /**
@@ -221,15 +230,16 @@ class SearchRecipesActionTest extends TestCase
         Recipe::factory()->create(['name' => 'Recipe with Special Characters & Symbols!']);
         Recipe::factory()->create(['name' => 'Normal Recipe']);
 
-        $result = $this->action->execute(['keyword' => 'Special Characters & Symbols']);
+        $query = $this->action->execute(['keyword' => 'Special Characters & Symbols']);
+        $result = $query->get();
 
-        $this->assertEquals(1, $result->total());
+        $this->assertEquals(1, $result->count());
     }
 
     /**
      * @test
      */
-    public function it_maintains_pagination_with_filters()
+    public function it_returns_query_builder_with_filters()
     {
         $recipes = [];
         for ($i = 1; $i <= 10; $i++) {
@@ -237,17 +247,18 @@ class SearchRecipesActionTest extends TestCase
             $recipe->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
         }
 
-        $result = $this->action->execute([
+        $query = $this->action->execute([
             'author_email' => 'chef@example.com',
             'keyword' => 'Chocolate',
-            'perPage' => 3,
-            'page' => 2,
         ]);
 
-        $this->assertEquals(3, $result->perPage());
-        $this->assertEquals(2, $result->currentPage());
-        $this->assertEquals(10, $result->total());
-        $this->assertEquals(3, $result->count());
+        // Test that the filtered query can be paginated
+        $paginated = $query->paginate(3, ['*'], 'page', 2);
+
+        $this->assertEquals(3, $paginated->perPage());
+        $this->assertEquals(2, $paginated->currentPage());
+        $this->assertEquals(10, $paginated->total());
+        $this->assertEquals(3, $paginated->count());
     }
 
     /**
@@ -276,13 +287,172 @@ class SearchRecipesActionTest extends TestCase
         $partial2->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
         $partial2->ingredients()->create(['name' => 'vanilla', 'quantity' => 1]);
 
-        $result = $this->action->execute([
+        $query = $this->action->execute([
             'author_email' => 'chef@example.com',
             'keyword' => 'Chocolate',
             'ingredient' => 'chocolate',
         ]);
+        $result = $query->get();
 
-        $this->assertEquals(1, $result->total());
-        $this->assertEquals('Chocolate Cake', $result->items()[0]->name);
+        $this->assertEquals(1, $result->count());
+        $this->assertEquals('Chocolate Cake', $result->first()->name);
+    }
+
+    /**
+     * @test
+     */
+    public function it_handles_multiple_author_emails_with_comma_separation()
+    {
+        $recipe1 = Recipe::factory()->create(['name' => 'Recipe 1']);
+        $recipe1->authors()->create(['name' => 'Chef 1', 'email' => 'chef1@example.com']);
+
+        $recipe2 = Recipe::factory()->create(['name' => 'Recipe 2']);
+        $recipe2->authors()->create(['name' => 'Chef 2', 'email' => 'chef2@example.com']);
+
+        $recipe3 = Recipe::factory()->create(['name' => 'Recipe 3']);
+        $recipe3->authors()->create(['name' => 'Chef 3', 'email' => 'chef3@example.com']);
+
+        $query = $this->action->execute([
+            'author_email' => 'chef1@example.com,chef3@example.com',
+        ]);
+        $result = $query->get();
+
+        $this->assertEquals(2, $result->count());
+        $names = $result->pluck('name')->toArray();
+        $this->assertEqualsCanonicalizing(['Recipe 1', 'Recipe 3'], $names);
+    }
+
+    /**
+     * @test
+     */
+    public function it_handles_multiple_ingredients_with_comma_separation()
+    {
+        $recipe1 = Recipe::factory()->create(['name' => 'Potato Soup']);
+        $recipe1->ingredients()->create(['name' => 'potatoes', 'quantity' => 3]);
+
+        $recipe2 = Recipe::factory()->create(['name' => 'Tomato Salad']);
+        $recipe2->ingredients()->create(['name' => 'tomatoes', 'quantity' => 2]);
+
+        $recipe3 = Recipe::factory()->create(['name' => 'Carrot Cake']);
+        $recipe3->ingredients()->create(['name' => 'carrots', 'quantity' => 1]);
+
+        $query = $this->action->execute([
+            'ingredient' => 'potato,tomato',
+        ]);
+        $result = $query->get();
+
+        $this->assertEquals(2, $result->count());
+        $names = $result->pluck('name')->toArray();
+        $this->assertEqualsCanonicalizing(['Potato Soup', 'Tomato Salad'], $names);
+    }
+
+    /**
+     * @test
+     */
+    public function it_properly_delegates_to_recipe_builder()
+    {
+        // Create diverse test data
+        $recipe1 = Recipe::factory()->create([
+            'name' => 'Chocolate Chip Cookies',
+            'description' => 'Sweet treats',
+        ]);
+        $recipe1->authors()->create([
+            'name' => 'Baker Bob',
+            'email' => 'baker@example.com',
+        ]);
+        $recipe1->ingredients()->create([
+            'name' => 'chocolate chips',
+            'quantity' => 2,
+            'unit' => 'cups',
+        ]);
+        $recipe1->steps()->create([
+            'title' => 'Mix chocolate',
+            'description' => 'Fold in chips',
+            'order' => 1,
+        ]);
+
+        // Test that all search paths work through the action
+        $query = $this->action->execute([
+            'keyword' => 'chocolate',
+        ]);
+        $result = $query->get();
+
+        $this->assertEquals(1, $result->count());
+        $this->assertEquals('Chocolate Chip Cookies', $result->first()->name);
+
+        // Verify relationships are loaded
+        $item = $result->first();
+        $this->assertTrue($item->relationLoaded('authors'));
+        $this->assertTrue($item->relationLoaded('ingredients'));
+        $this->assertTrue($item->relationLoaded('steps'));
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_keyword_in_all_required_fields()
+    {
+        // Test recipe.name
+        $recipe1 = Recipe::factory()->create([
+            'name' => 'Chocolate Cake',
+            'description' => 'A dessert',
+        ]);
+
+        // Test recipe.description
+        $recipe2 = Recipe::factory()->create([
+            'name' => 'Vanilla Cake',
+            'description' => 'With chocolate frosting',
+        ]);
+
+        // Test ingredients.name
+        $recipe3 = Recipe::factory()->create([
+            'name' => 'Salad',
+            'description' => 'Healthy',
+        ]);
+        $recipe3->ingredients()->create([
+            'name' => 'chocolate dressing',
+            'quantity' => 1,
+        ]);
+
+        // Test steps.title
+        $recipe4 = Recipe::factory()->create([
+            'name' => 'Cookies',
+            'description' => 'Snack',
+        ]);
+        $recipe4->steps()->create([
+            'title' => 'Add chocolate',
+            'description' => 'Mix well',
+            'order' => 1,
+        ]);
+
+        $query = $this->action->execute([
+            'keyword' => 'chocolate',
+        ]);
+        $result = $query->get();
+
+        $this->assertEquals(4, $result->count());
+        $names = $result->pluck('name')->toArray();
+        $this->assertEqualsCanonicalizing(
+            ['Chocolate Cake', 'Vanilla Cake', 'Salad', 'Cookies'],
+            $names
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function it_normalizes_and_handles_empty_values_in_comma_separated_lists()
+    {
+        $recipe = Recipe::factory()->create(['name' => 'Test Recipe']);
+        $recipe->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
+
+        // Test with extra spaces and empty values
+        $query = $this->action->execute([
+            'author_email' => 'chef@example.com, , ,other@example.com',
+        ]);
+        $result = $query->get();
+
+        $this->assertEquals(1, $result->count());
+        $this->assertEquals('Test Recipe', $result->first()->name);
     }
 }

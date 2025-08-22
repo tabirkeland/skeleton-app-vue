@@ -4,20 +4,10 @@ namespace App\Actions\Search;
 
 use App\Contracts\Action;
 use App\Models\Recipe;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class SearchRecipesAction implements Action
 {
-    /**
-     * @var int
-     */
-    public const DEFAULT_PAGE = 1;
-
-    /**
-     * @var int
-     */
-    public const DEFAULT_PER_PAGE = 15;
-
     /**
      * Create a new SearchRecipesAction instance.
      */
@@ -29,23 +19,19 @@ class SearchRecipesAction implements Action
     /**
      * Execute recipe search with GraphQL-validated parameters.
      *
-     * GraphQL Lighthouse handles parameter validation through query arguments.
-     * This action focuses on search business logic and result optimization.
+     * Returns a query builder for Lighthouse's @paginate directive.
+     * Lighthouse will handle the actual pagination.
      *
      * @param  array  $parameters Search parameters already validated by GraphQL
-     * @return LengthAwarePaginator Paginated search results
+     * @return Builder Query builder for Lighthouse to paginate
      */
     public function execute(array $parameters = []): mixed
     {
-        // Extract pagination parameters with defaults
-        $page = $parameters['page'] ?? self::DEFAULT_PAGE;
-        $perPage = $parameters['perPage'] ?? self::DEFAULT_PER_PAGE;
-
         // Prepare and normalize search filters
         $filters = $this->prepareSearchFilters($parameters);
 
-        // Execute the search with business logic applied
-        return $this->performSearch($filters, $page, $perPage);
+        // Build and return the search query
+        return $this->buildSearchQuery($filters);
     }
 
     /**
@@ -62,22 +48,22 @@ class SearchRecipesAction implements Action
         $filters = [];
 
         // Normalize author email(s) for consistent searching
-        if (! empty($parameters['author_email'])) {
+        if (!empty($parameters['author_email'])) {
             $filters['author_emails'] = $this->normalizeEmails($parameters['author_email']);
         }
 
         // Normalize author name for consistent searching
-        if (! empty($parameters['author_name'])) {
+        if (!empty($parameters['author_name'])) {
             $filters['author_name'] = $this->normalizeSearchKeyword($parameters['author_name']);
         }
 
         // Normalize keyword for better search matching
-        if (! empty($parameters['keyword'])) {
+        if (!empty($parameters['keyword'])) {
             $filters['keyword'] = $this->normalizeSearchKeyword($parameters['keyword']);
         }
 
         // Normalize ingredient(s) for consistent ingredient matching
-        if (! empty($parameters['ingredient'])) {
+        if (!empty($parameters['ingredient'])) {
             $filters['ingredients'] = $this->normalizeIngredients($parameters['ingredient']);
         }
 
@@ -139,67 +125,24 @@ class SearchRecipesAction implements Action
     }
 
     /**
-     * Perform the search with the given filters and pagination.
+     * Build the search query with the given filters.
+     * Returns a query builder for Lighthouse to paginate.
      */
-    protected function performSearch(array $filters, int $page, int $perPage): LengthAwarePaginator
+    protected function buildSearchQuery(array $filters): Builder
     {
         $query = $this->recipe->query();
 
-        // Apply search filters using the RecipeBuilder's search method
+        // Apply all search filters through RecipeBuilder's unified search method
         if (!empty($filters)) {
-            // Handle multiple ingredients separately
-            if (isset($filters['ingredients'])) {
-                $ingredients = $filters['ingredients'];
-                unset($filters['ingredients']);
-
-                // Use withAnyIngredient for multiple ingredients (OR logic)
-                if (count($ingredients) > 1) {
-                    $query = $query->withAnyIngredient($ingredients);
-                } else {
-                    $query = $query->withIngredient($ingredients[0]);
-                }
-            }
-
-            // Handle multiple author emails separately
-            if (isset($filters['author_emails'])) {
-                $emails = $filters['author_emails'];
-                unset($filters['author_emails']);
-
-                // Use withAnyAuthor for multiple emails (OR logic)
-                if (count($emails) > 1) {
-                    $query = $query->withAnyAuthor($emails);
-                } else {
-                    $query = $query->byAuthor($emails[0]);
-                }
-            }
-
-            // Apply other filters
-            if (!empty($filters)) {
-                $query = $query->search($filters);
-            }
+            $query = $query->search($filters);
         }
 
-        // Order by creation date (newest first) for consistent results
-        $query = $query->popular();
+        // Apply consistent ordering and eager loading
+        $query = $query->popular()
+            ->withCounts()
+            ->with(['authors', 'ingredients', 'steps']);
 
-        // Add ingredient and step counts for better GraphQL response
-        $query = $query->withCounts();
-
-        // Load relationships for GraphQL
-        $query = $query->with(['authors', 'ingredients', 'steps']);
-
-        // Execute pagination
-        return $query->paginate($perPage, ['*'], 'page', $page);
-    }
-
-    /**
-     * Check if any search parameters are provided.
-     */
-    public function hasSearchCriteria(array $parameters): bool
-    {
-        return ! empty($parameters['author_email']) ||
-               ! empty($parameters['author_name']) ||
-               ! empty($parameters['keyword']) ||
-               ! empty($parameters['ingredient']);
+        // Return the query builder for Lighthouse to paginate
+        return $query;
     }
 }

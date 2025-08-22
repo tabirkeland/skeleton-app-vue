@@ -4,52 +4,56 @@
 type Recipe {
     "Unique identifier"
     id: ID!
-    
+
     "Recipe name"
     name: String!
-    
+
     "Recipe description"
     description: String!
-    
+
+    "Recipe category"
+    category: String
+
     "URL-friendly identifier"
     slug: String!
-    
+
     "Optional image URL"
     image_url: String
-    
+
     "Preparation time in minutes"
     prep_time: Int
-    
+
     "Cooking time in minutes"
     cook_time: Int
-    
+
     "Number of servings"
     servings: Int
-    
+
     "List of authors"
     authors: [RecipeAuthor!]! @hasMany
-    
+
     "List of ingredients"
     ingredients: [RecipeIngredient!]! @hasMany
-    
+
     "List of cooking steps"
-    steps: [RecipeStep!]! @hasMany(orderBy: [{ column: "order", direction: ASC }])
-    
+    steps: [RecipeStep!]!
+        @hasMany(orderBy: [{ column: "order", direction: ASC }])
+
     "Primary author (first author)"
     primary_author: RecipeAuthor @method(name: "getPrimaryAuthorAttribute")
-    
+
     "Author email (for backwards compatibility)"
     author_email: String @method(name: "getAuthorEmailAttribute")
-    
+
     "Number of ingredients (computed field)"
     ingredient_count: Int! @method(name: "getIngredientCountAttribute")
-    
+
     "Number of cooking steps (computed field)"
     step_count: Int! @method(name: "getStepCountAttribute")
-    
+
     "Creation timestamp"
     created_at: DateTime!
-    
+
     "Last update timestamp"
     updated_at: DateTime!
 }
@@ -58,22 +62,22 @@ type Recipe {
 type RecipeAuthor {
     "Unique identifier"
     id: ID!
-    
+
     "Recipe this author belongs to"
     recipe: Recipe! @belongsTo
-    
+
     "Author name"
     name: String!
-    
+
     "Author email"
     email: String!
-    
+
     "About the author"
     about: String
-    
+
     "Creation timestamp"
     created_at: DateTime!
-    
+
     "Last update timestamp"
     updated_at: DateTime!
 }
@@ -82,28 +86,28 @@ type RecipeAuthor {
 type RecipeIngredient {
     "Unique identifier"
     id: ID!
-    
+
     "Recipe this ingredient belongs to"
     recipe: Recipe! @belongsTo
-    
+
     "Ingredient name"
     name: String!
-    
+
     "Quantity amount"
     quantity: Float!
-    
+
     "Unit of measurement"
     unit: String
-    
+
     "Whether ingredient is checked off"
     is_checked: Boolean!
-    
+
     "Formatted ingredient string"
     formatted: String! @method(name: "getFormattedAttribute")
-    
+
     "Creation timestamp"
     created_at: DateTime!
-    
+
     "Last update timestamp"
     updated_at: DateTime!
 }
@@ -112,25 +116,25 @@ type RecipeIngredient {
 type RecipeStep {
     "Unique identifier"
     id: ID!
-    
+
     "Recipe this step belongs to"
     recipe: Recipe! @belongsTo
-    
+
     "Step title"
     title: String
-    
+
     "Step description"
     description: String!
-    
+
     "Step order number"
     order: Int!
-    
+
     "Whether step is completed"
     completed: Boolean!
-    
+
     "Creation timestamp"
     created_at: DateTime!
-    
+
     "Last update timestamp"
     updated_at: DateTime!
 }
@@ -139,10 +143,10 @@ type RecipeStep {
 input CreateRecipeAuthorInput {
     "Author name"
     name: String! @rules(apply: ["required", "string", "max:255"])
-    
+
     "Author email"
     email: String! @rules(apply: ["required", "email", "max:255"])
-    
+
     "About the author"
     about: String
 }
@@ -151,10 +155,10 @@ input CreateRecipeAuthorInput {
 input CreateRecipeIngredientInput {
     "Ingredient name"
     name: String! @rules(apply: ["required", "string", "max:255"])
-    
+
     "Quantity amount"
     quantity: Float @rules(apply: ["numeric", "min:0"])
-    
+
     "Unit of measurement"
     unit: String @rules(apply: ["string", "max:50"])
 }
@@ -163,10 +167,10 @@ input CreateRecipeIngredientInput {
 input CreateRecipeStepInput {
     "Step title"
     title: String @rules(apply: ["string", "max:255"])
-    
+
     "Step description"
     description: String! @rules(apply: ["required", "string"])
-    
+
     "Step order number"
     order: Int @rules(apply: ["integer", "min:1"])
 }
@@ -175,33 +179,36 @@ input CreateRecipeStepInput {
 input CreateRecipeInput {
     "Recipe name"
     name: String! @rules(apply: ["required", "string", "min:1", "max:255"])
-    
+
     "Recipe description"
     description: String! @rules(apply: ["required", "string", "min:1"])
-    
+
     "URL-friendly identifier"
     slug: String @rules(apply: ["string", "max:255", "unique:recipes,slug"])
-    
+
     "Optional image URL"
     image_url: String @rules(apply: ["url", "max:500"])
-    
+
     "Preparation time in minutes"
     prep_time: Int @rules(apply: ["integer", "min:0", "max:1440"])
-    
+
     "Cooking time in minutes"
     cook_time: Int @rules(apply: ["integer", "min:0", "max:1440"])
-    
+
     "Number of servings"
     servings: Int @rules(apply: ["integer", "min:1", "max:100"])
-    
+
     "List of authors"
-    authors: [CreateRecipeAuthorInput!]! @rules(apply: ["required", "array", "min:1"])
-    
+    authors: [CreateRecipeAuthorInput!]!
+        @rules(apply: ["required", "array", "min:1"])
+
     "List of ingredients"
-    ingredients: [CreateRecipeIngredientInput!]! @rules(apply: ["required", "array", "min:1"])
-    
+    ingredients: [CreateRecipeIngredientInput!]!
+        @rules(apply: ["required", "array", "min:1"])
+
     "Cooking steps"
-    steps: [CreateRecipeStepInput!]! @rules(apply: ["required", "array", "min:1"])
+    steps: [CreateRecipeStepInput!]!
+        @rules(apply: ["required", "array", "min:1"])
 }
 
 type Query {
@@ -209,21 +216,29 @@ type Query {
     recipes(
         author_email: String
         author_name: String
-        keyword: String  
+        keyword: String
         ingredient: String
-    ): [Recipe!]! @paginate(defaultCount: 15, maxCount: 100, resolver: "App\\GraphQL\\Queries\\SearchRecipes")
-    
+    ): [Recipe!]!
+        @paginate(
+            defaultCount: 15
+            maxCount: 100
+            builder: "App\\GraphQL\\Queries\\SearchRecipes"
+        )
+
     "Get a single recipe by its slug"
-    recipe(slug: String!): Recipe @field(resolver: "App\\GraphQL\\Queries\\GetRecipe")
-    
+    recipe(slug: String!): Recipe
+        @field(resolver: "App\\GraphQL\\Queries\\GetRecipe")
+
     "Simple health check query"
     health: String! @field(resolver: "App\\GraphQL\\Queries\\Health@resolve")
 }
 
 type Mutation {
     "Create a new recipe"
-    createRecipe(input: CreateRecipeInput!): Recipe! @field(resolver: "App\\GraphQL\\Mutations\\CreateRecipe")
+    createRecipe(input: CreateRecipeInput!): Recipe!
+        @field(resolver: "App\\GraphQL\\Mutations\\CreateRecipe")
 }
 
 # Scalar type for DateTime
-scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+scalar DateTime
+    @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")

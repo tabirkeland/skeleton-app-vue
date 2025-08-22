@@ -2,9 +2,9 @@
   <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 overflow-hidden group">
     <!-- Recipe Image -->
     <div class="relative h-48 bg-gradient-to-br from-alaskan-100 to-ocean-100 overflow-hidden">
-      <img 
-        v-if="recipe.image_url" 
-        :src="recipe.image_url" 
+      <img
+        v-if="recipe.image_url"
+        :src="recipe.image_url"
         :alt="recipe.name"
         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         @error="handleImageError"
@@ -13,7 +13,7 @@
         <ChefHat :size="48" class="text-alaskan-400 opacity-50" />
       </div>
     </div>
-    
+
     <!-- Recipe Header -->
     <div class="p-6 pb-4">
       <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-alaskan-600 transition-colors">
@@ -61,8 +61,8 @@
         >
           {{ ingredient.name || ingredient }}
         </span>
-        <span 
-          v-if="recipe.ingredients.length > 3" 
+        <span
+          v-if="recipe.ingredients.length > 3"
           class="inline-block bg-driftwood-100 text-driftwood-600 text-xs font-medium px-3 py-1 rounded-full border border-driftwood-200"
         >
           +{{ recipe.ingredients.length - 3 }} more
@@ -73,7 +73,7 @@
     <!-- Action Button -->
     <div class="px-6 pb-6 pt-2 border-t border-gray-100">
       <router-link
-        :to="`/recipe/${recipe.slug}`"
+        :to="`/recipes/${recipe.slug}`"
         class="block w-full bg-gradient-to-r from-alaskan-500 to-ocean-600 hover:from-alaskan-600 hover:to-ocean-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition-all duration-200 hover:shadow-lg focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2"
       >
         <span class="flex items-center justify-center gap-2">

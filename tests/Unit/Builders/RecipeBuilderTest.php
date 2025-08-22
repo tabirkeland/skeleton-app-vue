@@ -154,18 +154,18 @@ class RecipeBuilderTest extends TestCase
         $this->createRecipeWithSteps(
             ['name' => 'Brownies', 'description' => 'Dessert'],
             [
-                ['description' => 'Mix ingredients', 'order' => 1],
-                ['description' => 'Add chocolate chips', 'order' => 2],
-                ['description' => 'Bake', 'order' => 3],
+                ['title' => 'Mix ingredients', 'description' => 'Combine dry ingredients', 'order' => 1],
+                ['title' => 'Add chocolate chips', 'description' => 'Fold in the chips', 'order' => 2],
+                ['title' => 'Bake', 'description' => 'Bake at 350F', 'order' => 3],
             ]
         );
 
         $this->createRecipeWithSteps(
             ['name' => 'Cookies', 'description' => 'Snack'],
             [
-                ['description' => 'Mix', 'order' => 1],
-                ['description' => 'Shape', 'order' => 2],
-                ['description' => 'Bake', 'order' => 3],
+                ['title' => 'Mix', 'description' => 'Combine ingredients', 'order' => 1],
+                ['title' => 'Shape', 'description' => 'Form into balls', 'order' => 2],
+                ['title' => 'Bake', 'description' => 'Bake until golden', 'order' => 3],
             ]
         );
 
@@ -352,5 +352,276 @@ class RecipeBuilderTest extends TestCase
 
         $this->assertCount(2, $recipes);
         $this->assertTrue($recipes->first()->created_at->isAfter($recipes->last()->created_at));
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_with_multiple_author_emails()
+    {
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe 1'],
+            ['name' => 'Chef One', 'email' => 'chef1@example.com']
+        );
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe 2'],
+            ['name' => 'Chef Two', 'email' => 'chef2@example.com']
+        );
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe 3'],
+            ['name' => 'Chef Three', 'email' => 'chef3@example.com']
+        );
+
+        $recipes = Recipe::withAnyAuthor(['chef1@example.com', 'chef3@example.com'])->get();
+
+        $this->assertCount(2, $recipes);
+        $this->assertEqualsCanonicalizing(
+            ['Recipe 1', 'Recipe 3'],
+            $recipes->pluck('name')->toArray()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_with_author_emails_array_via_search_method()
+    {
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe A'],
+            ['name' => 'Author A', 'email' => 'a@example.com']
+        );
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe B'],
+            ['name' => 'Author B', 'email' => 'b@example.com']
+        );
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe C'],
+            ['name' => 'Author C', 'email' => 'c@example.com']
+        );
+
+        $recipes = Recipe::search([
+            'author_emails' => ['a@example.com', 'c@example.com'],
+        ])->get();
+
+        $this->assertCount(2, $recipes);
+        $this->assertEqualsCanonicalizing(
+            ['Recipe A', 'Recipe C'],
+            $recipes->pluck('name')->toArray()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_with_single_author_email_in_array()
+    {
+        $this->createRecipeWithAuthor(
+            ['name' => 'Single Recipe'],
+            ['name' => 'Single Author', 'email' => 'single@example.com']
+        );
+        $this->createRecipeWithAuthor(
+            ['name' => 'Other Recipe'],
+            ['name' => 'Other Author', 'email' => 'other@example.com']
+        );
+
+        $recipes = Recipe::search([
+            'author_emails' => ['single@example.com'],
+        ])->get();
+
+        $this->assertCount(1, $recipes);
+        $this->assertEquals('Single Recipe', $recipes->first()->name);
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_with_multiple_ingredients()
+    {
+        $this->createRecipeWithIngredients(
+            ['name' => 'Potato Soup'],
+            [
+                ['name' => 'potatoes', 'quantity' => 3],
+                ['name' => 'onions', 'quantity' => 1],
+            ]
+        );
+        $this->createRecipeWithIngredients(
+            ['name' => 'Tomato Salad'],
+            [
+                ['name' => 'tomatoes', 'quantity' => 2],
+                ['name' => 'lettuce', 'quantity' => 1],
+            ]
+        );
+        $this->createRecipeWithIngredients(
+            ['name' => 'Mixed Vegetables'],
+            [
+                ['name' => 'potatoes', 'quantity' => 1],
+                ['name' => 'tomatoes', 'quantity' => 1],
+            ]
+        );
+
+        $recipes = Recipe::withAnyIngredient(['potato', 'tomato'])->get();
+
+        $this->assertCount(3, $recipes);
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_with_ingredients_array_via_search_method()
+    {
+        $this->createRecipeWithIngredients(
+            ['name' => 'Cheese Pizza'],
+            [
+                ['name' => 'cheese', 'quantity' => 2, 'unit' => 'cups'],
+                ['name' => 'tomato sauce', 'quantity' => 1, 'unit' => 'cup'],
+            ]
+        );
+        $this->createRecipeWithIngredients(
+            ['name' => 'Chicken Salad'],
+            [
+                ['name' => 'chicken', 'quantity' => 1],
+                ['name' => 'lettuce', 'quantity' => 2],
+            ]
+        );
+        $this->createRecipeWithIngredients(
+            ['name' => 'Cheese Chicken'],
+            [
+                ['name' => 'cheese', 'quantity' => 1],
+                ['name' => 'chicken breast', 'quantity' => 2],
+            ]
+        );
+
+        $recipes = Recipe::search([
+            'ingredients' => ['cheese', 'chicken'],
+        ])->get();
+
+        $this->assertCount(3, $recipes);
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_with_single_ingredient_in_array()
+    {
+        $this->createRecipeWithIngredients(
+            ['name' => 'Garlic Bread'],
+            [['name' => 'garlic', 'quantity' => 3]]
+        );
+        $this->createRecipeWithIngredients(
+            ['name' => 'Plain Bread'],
+            [['name' => 'flour', 'quantity' => 2]]
+        );
+
+        $recipes = Recipe::search([
+            'ingredients' => ['garlic'],
+        ])->get();
+
+        $this->assertCount(1, $recipes);
+        $this->assertEquals('Garlic Bread', $recipes->first()->name);
+    }
+
+    /**
+     * @test
+     */
+    public function it_searches_by_author_name()
+    {
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe by John'],
+            ['name' => 'John Doe', 'email' => 'john@example.com']
+        );
+        $this->createRecipeWithAuthor(
+            ['name' => 'Recipe by Jane'],
+            ['name' => 'Jane Smith', 'email' => 'jane@example.com']
+        );
+
+        $recipes = Recipe::byAuthorName('John')->get();
+
+        $this->assertCount(1, $recipes);
+        $this->assertEquals('Recipe by John', $recipes->first()->name);
+    }
+
+    /**
+     * @test
+     */
+    public function it_combines_all_search_filters()
+    {
+        // Create recipe that matches all filters
+        $recipe1 = Recipe::factory()->create([
+            'name' => 'Chocolate Chip Cookies',
+            'description' => 'Sweet treats',
+        ]);
+        $recipe1->authors()->create([
+            'name' => 'Baker Bob',
+            'email' => 'baker@example.com',
+        ]);
+        $recipe1->ingredients()->create([
+            'name' => 'chocolate chips',
+            'quantity' => 2,
+            'unit' => 'cups',
+        ]);
+
+        // Create recipe that matches some but not all filters
+        $recipe2 = Recipe::factory()->create([
+            'name' => 'Brownies',
+            'description' => 'Chocolate dessert',
+        ]);
+        $recipe2->authors()->create([
+            'name' => 'Chef John',  // Doesn't match 'Baker'
+            'email' => 'chef@example.com',
+        ]);
+        $recipe2->ingredients()->create([
+            'name' => 'dark chocolate',
+            'quantity' => 2,
+            'unit' => 'cups',
+        ]);
+
+        // Search with multiple filters - only recipe1 should match all
+        $recipes = Recipe::search([
+            'keyword' => 'chocolate',
+            'author_name' => 'Baker',
+            'ingredients' => ['chocolate'],
+        ])->get();
+
+        $this->assertCount(1, $recipes);
+        $this->assertEquals('Chocolate Chip Cookies', $recipes->first()->name);
+    }
+
+    /**
+     * @test
+     */
+    public function it_verifies_keyword_searches_all_required_fields()
+    {
+        // Test recipe.name
+        $recipe1 = Recipe::factory()->create([
+            'name' => 'Chocolate Cake',
+            'description' => 'A dessert',
+        ]);
+
+        // Test recipe.description
+        $recipe2 = Recipe::factory()->create([
+            'name' => 'Vanilla Cake',
+            'description' => 'With chocolate frosting',
+        ]);
+
+        // Test ingredients.name
+        $recipe3 = $this->createRecipeWithIngredients(
+            ['name' => 'Salad', 'description' => 'Healthy'],
+            [['name' => 'chocolate dressing', 'quantity' => 1]]
+        );
+
+        // Test steps.title
+        $recipe4 = $this->createRecipeWithSteps(
+            ['name' => 'Cookies', 'description' => 'Snack'],
+            [['title' => 'Add chocolate', 'description' => 'Mix well', 'order' => 1]]
+        );
+
+        $recipes = Recipe::searchKeyword('chocolate')->get();
+
+        $this->assertCount(4, $recipes);
+        $recipeNames = $recipes->pluck('name')->toArray();
+        $this->assertEqualsCanonicalizing(
+            ['Chocolate Cake', 'Vanilla Cake', 'Salad', 'Cookies'],
+            $recipeNames
+        );
     }
 }

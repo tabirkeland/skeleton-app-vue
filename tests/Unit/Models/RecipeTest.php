@@ -32,6 +32,7 @@ class RecipeTest extends TestCase
             'name',
             'description',
             'slug',
+            'category',
             'image_url',
             'prep_time',
             'cook_time',

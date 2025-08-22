@@ -3,28 +3,37 @@
 namespace App\GraphQL\Queries;
 
 use App\Actions\Search\SearchRecipesAction;
+use GraphQL\Type\Definition\ResolveInfo;
+use Illuminate\Database\Eloquent\Builder;
+use Nuwave\Lighthouse\Support\Contracts\GraphQLContext;
 
 class SearchRecipes
 {
-    protected $searchAction;
-
-    public function __construct(SearchRecipesAction $searchAction)
+    /**
+     * Create a new SearchRecipes instance.
+     *
+     * @return void
+     */
+    public function __construct(protected SearchRecipesAction $action)
     {
-        $this->searchAction = $searchAction;
     }
 
     /**
-     * Search recipes with filters and pagination
+     * Build the search query for recipes.
+     * This is called by Lighthouse's @paginate directive with the builder argument.
+     * It expects standard GraphQL resolver arguments.
+     *
+     * @param  mixed  $root
      */
-    public function __invoke($_, array $args, $context, $info)
+    public function __invoke($root, array $args, GraphQLContext $context, ResolveInfo $resolveInfo): Builder
     {
-        return $this->searchAction->execute([
+        // Pass search parameters to the action
+        // The action returns a query builder that Lighthouse will paginate
+        return $this->action->execute([
             'author_email' => $args['author_email'] ?? null,
             'author_name' => $args['author_name'] ?? null,
             'keyword' => $args['keyword'] ?? null,
             'ingredient' => $args['ingredient'] ?? null,
-            'page' => $args['page'] ?? 1,
-            'perPage' => $args['first'] ?? 15,
         ]);
     }
 }
