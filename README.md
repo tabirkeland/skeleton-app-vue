@@ -77,7 +77,7 @@ cp .env.example .env
 
 ### Access the Application
 
--   **Frontend**: http://localhost:3000
+-   **Frontend**: http://localhost:3000 (or next available port - Vite will display the correct URL)
 -   **Backend API**: http://localhost:8888/graphql
 -   **GraphQL Playground**: http://localhost:8888/graphql-playground (when APP_DEBUG=true)
 -   **MySQL**: localhost:3333

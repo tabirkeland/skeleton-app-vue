@@ -1,82 +1,134 @@
 <template>
-  <div class="recipe-search">
-    <div class="search-header">
-      <h1>Recipe Search 3000</h1>
-      <p>Find delicious recipes using advanced search filters</p>
+  <div class="min-h-screen">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-alaskan-500 to-ocean-600 text-white pb-16 pt-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="flex justify-center mb-6">
+          <img src="/src/assets/logo-text.png" alt="Wild Alaskan Recipes" class="h-24 md:h-32 filter brightness-0 invert">
+        </div>
+        <h1 class="text-3xl md:text-5xl font-bold mb-4">Find Amazing Wild Alaskan Recipes</h1>
+        <p class="text-lg md:text-xl opacity-90">Discover delicious recipes using our advanced search filters</p>
+      </div>
     </div>
 
     <!-- Search Form -->
-    <div class="search-form">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="keyword">Keyword</label>
-          <input
-            id="keyword"
-            v-model="searchParams.keyword"
-            type="text"
-            placeholder="Search recipe name or description..."
-            @input="debouncedSearch"
-          >
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
+      <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="space-y-2">
+            <label for="keyword" class="block text-sm font-semibold text-gray-700">🔍 Keyword Search</label>
+            <input
+              id="keyword"
+              v-model="searchParams.keyword"
+              type="text"
+              placeholder="Search recipe name or description..."
+              @input="debouncedSearch"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+            >
+          </div>
+          <div class="space-y-2">
+            <label for="ingredient" class="block text-sm font-semibold text-gray-700">🥄 Ingredient</label>
+            <input
+              id="ingredient"
+              v-model="searchParams.ingredient"
+              type="text"
+              placeholder="e.g. chocolate, flour, eggs..."
+              @input="debouncedSearch"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+            >
+          </div>
         </div>
-        <div class="form-group">
-          <label for="ingredient">Ingredient</label>
-          <input
-            id="ingredient"
-            v-model="searchParams.ingredient"
-            type="text"
-            placeholder="e.g. chocolate, flour, eggs..."
-            @input="debouncedSearch"
-          >
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="space-y-2">
+            <label for="author-name" class="block text-sm font-semibold text-gray-700">👨‍🍳 Author Name</label>
+            <input
+              id="author-name"
+              v-model="searchParams.author_name"
+              type="text"
+              placeholder="e.g. Gordon Ramsay"
+              @input="debouncedSearch"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+            >
+          </div>
+          <div class="space-y-2">
+            <label for="author" class="block text-sm font-semibold text-gray-700">📧 Author Email</label>
+            <input
+              id="author"
+              v-model="searchParams.author_email"
+              type="email"
+              placeholder="chef@example.com"
+              @input="debouncedSearch"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+            >
+          </div>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="author">Author Email</label>
-          <input
-            id="author"
-            v-model="searchParams.author_email"
-            type="email"
-            placeholder="chef@example.com"
-            @input="debouncedSearch"
+
+        <div class="flex justify-center space-x-4">
+          <button
+            @click="performSearch"
+            :disabled="!hasAnySearchParams || loading"
+            class="px-6 py-3 bg-alaskan-500 hover:bg-alaskan-600 disabled:bg-gray-300 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2 disabled:cursor-not-allowed"
           >
-        </div>
-        <div class="form-group">
-          <button @click="clearSearch" class="clear-btn">Clear All</button>
+            <span v-if="loading" class="flex items-center">
+              <div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+              Searching...
+            </span>
+            <span v-else>🔍 Search Recipes</span>
+          </button>
+          <button
+            @click="clearSearch"
+            class="px-6 py-3 bg-driftwood-100 hover:bg-driftwood-200 text-driftwood-700 font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2"
+          >
+            🗑️ Clear All Filters
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading && !recipes.length" class="loading">
-      <p>🔍 Searching recipes...</p>
+    <div v-if="loading && !recipes.length" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+      <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-alaskan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p class="text-lg text-gray-600">🔍 Searching recipes...</p>
+      </div>
     </div>
 
     <!-- Error State -->
-    <div v-if="error" class="error">
-      <p>❌ Error loading recipes: {{ error.message }}</p>
-      <button @click="refetch" class="retry-btn">Try Again</button>
+    <div v-if="error" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <p class="text-red-800 mb-4">❌ Error loading recipes: {{ error.message }}</p>
+        <button
+          @click="refetch"
+          class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+        >
+          Try Again
+        </button>
+      </div>
     </div>
 
     <!-- Search Results -->
-    <div v-if="recipes.length" class="search-results">
-      <div class="results-header">
-        <h2>Found {{ totalRecipes }} recipe{{ totalRecipes !== 1 ? 's' : '' }}</h2>
+    <div v-if="recipes.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+      <div class="mb-8">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-900 text-center">
+          Found {{ totalRecipes }} recipe{{ totalRecipes !== 1 ? 's' : '' }}
+        </h2>
       </div>
-      
-      <div class="recipe-grid">
-        <RecipeCard 
-          v-for="recipe in recipes" 
-          :key="recipe.id" 
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <RecipeCard
+          v-for="recipe in recipes"
+          :key="recipe.id"
           :recipe="recipe"
         />
       </div>
 
       <!-- Load More Button -->
-      <div v-if="hasNextPage" class="load-more">
-        <button 
-          @click="loadMore" 
+      <div v-if="hasNextPage" class="text-center">
+        <button
+          @click="loadMore"
           :disabled="loadingMore"
-          class="load-more-btn"
+          class="px-6 py-3 bg-alaskan-500 hover:bg-alaskan-600 disabled:bg-driftwood-400 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2 disabled:cursor-not-allowed"
         >
           {{ loadingMore ? '⏳ Loading...' : '📄 Load More Recipes' }}
         </button>
@@ -84,22 +136,30 @@
     </div>
 
     <!-- No Results -->
-    <div v-if="!loading && !error && !recipes.length && hasSearched" class="no-results">
-      <p>🍽️ No recipes found matching your search criteria</p>
-      <p>Try different keywords or clear your filters</p>
+    <div v-if="!loading && !error && !recipes.length && hasSearched" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+      <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+        <div class="text-6xl mb-4">🍽️</div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No recipes found</h3>
+        <p class="text-gray-600 mb-4">No recipes match your search criteria</p>
+        <p class="text-gray-500">Try different keywords or clear your filters</p>
+      </div>
     </div>
 
     <!-- Welcome State -->
-    <div v-if="!hasSearched && !loading" class="welcome">
-      <p>🚀 Start searching for recipes using the form above!</p>
-      <p>Try searching for "chocolate", or by ingredient like "flour"</p>
+    <div v-if="!hasSearched && !loading" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+      <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+        <div class="text-6xl mb-4">🚀</div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Ready to find amazing recipes?</h3>
+        <p class="text-gray-600 mb-2">Start searching using the form above!</p>
+        <p class="text-gray-500">Try searching for "chocolate", or by ingredient like "flour"</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useQuery } from '@vue/apollo-composable'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useLazyQuery } from '@vue/apollo-composable'
 import { SEARCH_RECIPES } from '../graphql/queries'
 import RecipeCard from '../components/RecipeCard.vue'
 
@@ -107,6 +167,7 @@ import RecipeCard from '../components/RecipeCard.vue'
 const searchParams = reactive({
   keyword: '',
   ingredient: '',
+  author_name: '',
   author_email: '',
   page: 1,
   perPage: 12
@@ -125,30 +186,36 @@ let searchTimeout = null
 const debouncedSearch = () => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    performSearch(true)
-  }, 500)
+    if (!loading.value) {
+      performSearch(true)
+    }
+  }, 1200)
 }
 
-// GraphQL query
-const { result, loading, error, refetch, fetchMore } = useQuery(
+// Reactive variables object
+const queryVariables = computed(() => ({
+  author_name: searchParams.author_name || null,
+  author_email: searchParams.author_email || null,
+  keyword: searchParams.keyword || null,
+  ingredient: searchParams.ingredient || null,
+  first: searchParams.perPage,
+  page: searchParams.page
+}))
+
+// GraphQL lazy query - doesn't execute until called
+const { result, loading, error, load, refetch, fetchMore } = useLazyQuery(
   SEARCH_RECIPES,
-  () => ({
-    author_email: searchParams.author_email || null,
-    keyword: searchParams.keyword || null,
-    ingredient: searchParams.ingredient || null,
-    first: searchParams.perPage,
-    page: searchParams.page
-  }),
+  queryVariables,
   {
-    enabled: false, // Don't auto-execute on mount
     errorPolicy: 'all',
-    fetchPolicy: 'cache-and-network'
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: true
   }
 )
 
 // Computed properties
 const hasAnySearchParams = computed(() => {
-  return searchParams.keyword || searchParams.ingredient || searchParams.author_email
+  return searchParams.keyword || searchParams.ingredient || searchParams.author_name || searchParams.author_email
 })
 
 // Watch for query results
@@ -168,11 +235,11 @@ const updateRecipesFromResult = (queryResult, append = false) => {
 }
 
 // Watch result changes
-const unwatchResult = result => {
-  if (result.value) {
-    updateRecipesFromResult(result.value)
+watch(result, (newResult) => {
+  if (newResult) {
+    updateRecipesFromResult(newResult)
   }
-}
+}, { immediate: true })
 
 // Perform search
 const performSearch = (reset = true) => {
@@ -180,9 +247,18 @@ const performSearch = (reset = true) => {
     searchParams.page = 1
     recipes.value = []
   }
-  
+
   if (hasAnySearchParams.value) {
-    refetch()
+    // Use load for first time or refetch for subsequent calls
+    try {
+      if (hasSearched.value) {
+        refetch()
+      } else {
+        load()
+      }
+    } catch (err) {
+      console.error('Error in performSearch:', err)
+    }
   } else {
     recipes.value = []
     hasSearched.value = false
@@ -192,22 +268,23 @@ const performSearch = (reset = true) => {
 // Load more results
 const loadMore = async () => {
   if (!hasNextPage.value || loadingMore.value) return
-  
+
   loadingMore.value = true
   try {
     const nextPage = currentPage.value + 1
+    const variables = {
+      author_name: searchParams.author_name || null,
+      author_email: searchParams.author_email || null,
+      keyword: searchParams.keyword || null,
+      ingredient: searchParams.ingredient || null,
+      first: searchParams.perPage,
+      page: nextPage
+    }
+
     const { data } = await fetchMore({
-      variables: {
-        input: {
-          keyword: searchParams.keyword || null,
-          ingredient: searchParams.ingredient || null,
-          author_email: searchParams.author_email || null,
-          page: nextPage,
-          perPage: searchParams.perPage
-        }
-      }
+      variables
     })
-    
+
     if (data?.recipes) {
       updateRecipesFromResult(data, true)
     }
@@ -222,17 +299,16 @@ const loadMore = async () => {
 const clearSearch = () => {
   searchParams.keyword = ''
   searchParams.ingredient = ''
+  searchParams.author_name = ''
   searchParams.author_email = ''
   searchParams.page = 1
   recipes.value = []
   hasSearched.value = false
 }
 
-// Watch result changes
+// Component is ready
 onMounted(() => {
-  if (result) {
-    unwatchResult(result)
-  }
+  // Component mounted
 })
 </script>
 
@@ -391,11 +467,11 @@ onMounted(() => {
     flex-direction: column;
     gap: 0;
   }
-  
+
   .form-group {
     margin-bottom: 20px;
   }
-  
+
   .recipe-grid {
     grid-template-columns: 1fr;
   }

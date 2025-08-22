@@ -36,7 +36,7 @@ frontend/
 ## Features
 
 ### Recipe Search View
-- Real-time search with debouncing (300ms)
+- Real-time search with debouncing (1200ms)
 - Multiple filter types:
   - Keyword search (name, description, ingredients, steps)
   - Ingredient filter
@@ -44,7 +44,8 @@ frontend/
   - Author name filter
 - Responsive grid layout with cards
 - "Load More" pagination
-- Loading states and error handling
+- Enhanced loading states (button spinner, full page loader)
+- Error handling with retry capability
 
 ### Recipe Detail View
 - Full recipe display with relational data:
@@ -80,7 +81,7 @@ npm install
 npm run dev
 ```
 
-The application will be available at http://localhost:3000
+The application will be available at http://localhost:3000 (or next available port - Vite will display the correct URL in console)
 
 ### Available Scripts
 

@@ -1,49 +1,66 @@
 <template>
-  <div class="recipe-card">
-    <div class="recipe-header">
-      <h3 class="recipe-title">{{ recipe.name }}</h3>
-      <div class="recipe-meta">
-        <span class="recipe-author">👨‍🍳 {{ recipe.author_email }}</span>
-        <span class="recipe-date">📅 {{ formatDate(recipe.created_at) }}</span>
+  <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 overflow-hidden group">
+    <!-- Recipe Header -->
+    <div class="p-6 pb-4">
+      <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-alaskan-600 transition-colors">
+        {{ recipe.name }}
+      </h3>
+      <div class="flex flex-col space-y-2 text-sm text-gray-600">
+        <span class="flex items-center">
+          <span class="mr-2">👨‍🍳</span>
+          {{ recipe.primary_author?.name || recipe.author_email || 'Unknown Chef' }}
+        </span>
+        <span class="flex items-center">
+          <span class="mr-2">📅</span>
+          {{ formatDate(recipe.created_at) }}
+        </span>
       </div>
     </div>
 
-    <div class="recipe-description">
-      <p>{{ truncateText(recipe.description, 120) }}</p>
+    <!-- Recipe Description -->
+    <div class="px-6 pb-4">
+      <p class="text-gray-700 leading-relaxed">{{ truncateText(recipe.description, 120) }}</p>
     </div>
 
-    <div class="recipe-stats">
-      <div class="stat">
-        <span class="stat-icon">🥄</span>
-        <span class="stat-text">{{ recipe.ingredient_count }} ingredients</span>
-      </div>
-      <div class="stat">
-        <span class="stat-icon">📋</span>
-        <span class="stat-text">{{ recipe.step_count }} steps</span>
+    <!-- Recipe Stats -->
+    <div class="px-6 pb-4">
+      <div class="flex justify-between items-center bg-gray-50 rounded-lg p-3">
+        <div class="flex items-center text-sm font-medium text-gray-700">
+          <span class="mr-2 text-lg">🥄</span>
+          {{ recipe.ingredient_count }} ingredients
+        </div>
+        <div class="flex items-center text-sm font-medium text-gray-700">
+          <span class="mr-2 text-lg">📋</span>
+          {{ recipe.step_count }} steps
+        </div>
       </div>
     </div>
 
     <!-- Ingredients Preview -->
-    <div class="ingredients-preview">
-      <h4>Key Ingredients:</h4>
-      <div class="ingredient-tags">
+    <div class="px-6 pb-4">
+      <h4 class="text-sm font-semibold text-gray-800 mb-3">Key Ingredients:</h4>
+      <div class="flex flex-wrap gap-2">
         <span
           v-for="(ingredient, index) in recipe.ingredients.slice(0, 3)"
           :key="index"
-          class="ingredient-tag"
+          class="inline-block bg-alaskan-100 text-alaskan-800 text-xs font-medium px-3 py-1 rounded-full border border-alaskan-200"
         >
-          {{ ingredient }}
+          {{ ingredient.name || ingredient }}
         </span>
-        <span v-if="recipe.ingredients.length > 3" class="more-ingredients">
+        <span 
+          v-if="recipe.ingredients.length > 3" 
+          class="inline-block bg-driftwood-100 text-driftwood-600 text-xs font-medium px-3 py-1 rounded-full border border-driftwood-200"
+        >
           +{{ recipe.ingredients.length - 3 }} more
         </span>
       </div>
     </div>
 
-    <div class="recipe-actions">
+    <!-- Action Button -->
+    <div class="px-6 pb-6 pt-2 border-t border-gray-100">
       <router-link
         :to="`/recipe/${recipe.slug}`"
-        class="view-recipe-btn"
+        class="block w-full bg-gradient-to-r from-alaskan-500 to-ocean-600 hover:from-alaskan-600 hover:to-ocean-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition-all duration-200 hover:shadow-lg focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2"
       >
         👀 View Full Recipe
       </router-link>
@@ -81,196 +98,3 @@ const recipeTitle = computed(() => props.recipe.name)
 const recipeDescription = computed(() => props.recipe.description)
 </script>
 
-<style scoped>
-.recipe-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  transition: all 0.3s ease;
-  border: 1px solid #e1e8ed;
-  height: fit-content;
-}
-
-.recipe-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border-color: #3498db;
-}
-
-.recipe-header {
-  margin-bottom: 16px;
-}
-
-.recipe-title {
-  color: #2c3e50;
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  line-height: 1.3;
-}
-
-.recipe-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  color: #7f8c8d;
-}
-
-.recipe-author,
-.recipe-date {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.recipe-description {
-  margin-bottom: 20px;
-}
-
-.recipe-description p {
-  color: #5d6d7e;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.recipe-stats {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #2c3e50;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.stat-icon {
-  font-size: 1.1rem;
-}
-
-.ingredients-preview {
-  margin-bottom: 24px;
-}
-
-.ingredients-preview h4 {
-  color: #2c3e50;
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-}
-
-.ingredient-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.ingredient-tag {
-  background: #e8f4fd;
-  color: #2980b9;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  border: 1px solid #d4e9f7;
-}
-
-.more-ingredients {
-  background: #ecf0f1;
-  color: #7f8c8d;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  font-style: italic;
-}
-
-.recipe-actions {
-  padding-top: 20px;
-  border-top: 1px solid #ecf0f1;
-}
-
-.view-recipe-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
-  text-decoration: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  width: 100%;
-  justify-content: center;
-}
-
-.view-recipe-btn:hover {
-  background: linear-gradient(135deg, #2980b9, #1f5582);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-}
-
-.view-recipe-btn:active {
-  transform: translateY(0);
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .recipe-card {
-    padding: 20px;
-  }
-
-  .recipe-title {
-    font-size: 1.25rem;
-  }
-
-  .recipe-stats {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .ingredient-tags {
-    gap: 6px;
-  }
-
-  .ingredient-tag,
-  .more-ingredients {
-    font-size: 0.75rem;
-    padding: 4px 8px;
-  }
-}
-
-/* Loading state */
-.recipe-card.loading {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.recipe-card.loading::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-</style>

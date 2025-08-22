@@ -84,6 +84,9 @@ export const SEARCH_RECIPES = gql`
           name
           email
         }
+        ingredients {
+          name
+        }
         author_email
         ingredient_count
         step_count
