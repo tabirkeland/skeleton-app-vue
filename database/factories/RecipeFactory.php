@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\Recipe;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use FakerRestaurant\Provider\en_US\Restaurant;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class RecipeFactory extends Factory
 {
@@ -29,14 +29,14 @@ class RecipeFactory extends Factory
         // Generate more realistic recipe names using combinations
         $nameOptions = [
             // Using FakerRestaurant methods
-            fn() => $this->faker->randomElement(['Classic', 'Homemade', 'Traditional', 'Modern', 'Gourmet']) . ' ' . $this->faker->foodName(),
-            fn() => $this->faker->meatName() . ' with ' . $this->faker->vegetableName(),
-            fn() => $this->faker->randomElement(['Grilled', 'Roasted', 'Baked', 'Fried', 'Steamed']) . ' ' . $this->faker->meatName(),
-            fn() => $this->faker->vegetableName() . ' ' . $this->faker->randomElement(['Salad', 'Soup', 'Stir-fry', 'Curry', 'Stew']),
-            fn() => $this->faker->sauceName() . ' ' . $this->faker->randomElement(['Pasta', 'Chicken', 'Fish', 'Vegetables']),
-            fn() => $this->faker->fruitName() . ' ' . $this->faker->randomElement(['Pie', 'Tart', 'Smoothie', 'Salad', 'Cake']),
-            fn() => $this->faker->dairyName() . ' ' . $this->faker->randomElement(['Sauce', 'Dip', 'Spread', 'Soup']),
-            fn() => $this->faker->beverageName() . ' ' . $this->faker->randomElement(['Cocktail', 'Mocktail', 'Smoothie', 'Shake']),
+            fn () => $this->faker->randomElement(['Classic', 'Homemade', 'Traditional', 'Modern', 'Gourmet']).' '.$this->faker->foodName(),
+            fn () => $this->faker->meatName().' with '.$this->faker->vegetableName(),
+            fn () => $this->faker->randomElement(['Grilled', 'Roasted', 'Baked', 'Fried', 'Steamed']).' '.$this->faker->meatName(),
+            fn () => $this->faker->vegetableName().' '.$this->faker->randomElement(['Salad', 'Soup', 'Stir-fry', 'Curry', 'Stew']),
+            fn () => $this->faker->sauceName().' '.$this->faker->randomElement(['Pasta', 'Chicken', 'Fish', 'Vegetables']),
+            fn () => $this->faker->fruitName().' '.$this->faker->randomElement(['Pie', 'Tart', 'Smoothie', 'Salad', 'Cake']),
+            fn () => $this->faker->dairyName().' '.$this->faker->randomElement(['Sauce', 'Dip', 'Spread', 'Soup']),
+            fn () => $this->faker->beverageName().' '.$this->faker->randomElement(['Cocktail', 'Mocktail', 'Smoothie', 'Shake']),
         ];
 
         $name = $this->faker->randomElement($nameOptions)();
@@ -44,8 +44,8 @@ class RecipeFactory extends Factory
         // Generate image URLs with better sources
         $imageSource = $this->faker->randomElement(['picsum', 'loremflickr']);
         $imageUrl = $imageSource === 'loremflickr'
-            ? "https://loremflickr.com/640/480/food,recipe,cooking"
-            : "https://picsum.photos/640/480?random=" . rand(1, 10000);
+            ? 'https://loremflickr.com/640/480/food,recipe,cooking'
+            : 'https://picsum.photos/640/480?random='.rand(1, 10000);
 
         return [
             'name' => ucwords($name),
@@ -95,12 +95,12 @@ class RecipeFactory extends Factory
             for ($i = 0; $i < $ingredientCount; $i++) {
                 // Generate unique ingredient using FakerRestaurant methods
                 $ingredientOptions = [
-                    fn() => $this->faker->vegetableName(),
-                    fn() => $this->faker->meatName(),
-                    fn() => $this->faker->fruitName(),
-                    fn() => $this->faker->dairyName(),
-                    fn() => $this->faker->sauceName(),
-                    fn() => $this->faker->randomElement(['salt', 'pepper', 'sugar', 'flour', 'eggs', 'butter', 'olive oil', 'garlic', 'onion', 'herbs', 'spices', 'vanilla extract', 'baking powder', 'baking soda', 'yeast', 'vinegar', 'honey', 'rice', 'pasta', 'bread crumbs', 'stock', 'wine']),
+                    fn () => $this->faker->vegetableName(),
+                    fn () => $this->faker->meatName(),
+                    fn () => $this->faker->fruitName(),
+                    fn () => $this->faker->dairyName(),
+                    fn () => $this->faker->sauceName(),
+                    fn () => $this->faker->randomElement(['salt', 'pepper', 'sugar', 'flour', 'eggs', 'butter', 'olive oil', 'garlic', 'onion', 'herbs', 'spices', 'vanilla extract', 'baking powder', 'baking soda', 'yeast', 'vinegar', 'honey', 'rice', 'pasta', 'bread crumbs', 'stock', 'wine']),
                 ];
 
                 do {
@@ -126,7 +126,7 @@ class RecipeFactory extends Factory
                 'Heat oil', 'Sauté vegetables', 'Add seasoning', 'Simmer', 'Bake', 'Cool', 'Serve',
                 'Chop vegetables', 'Marinate', 'Grill', 'Boil water', 'Drain', 'Garnish', 'Chill',
                 'Brown meat', 'Deglaze pan', 'Reduce heat', 'Stir continuously', 'Rest', 'Slice',
-                'Whisk', 'Fold gently', 'Steam', 'Blanch', 'Sear', 'Roast', 'Broil', 'Toast'
+                'Whisk', 'Fold gently', 'Steam', 'Blanch', 'Sear', 'Roast', 'Broil', 'Toast',
             ];
 
             for ($i = 0; $i < $stepCount; $i++) {

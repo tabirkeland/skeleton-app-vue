@@ -89,7 +89,7 @@ trait CreatesTestRecipes
         ];
 
         $generateRecipeAction = app(GenerateRecipeAction::class);
-        
+
         return $generateRecipeAction->execute([
             'data' => array_merge($recipeData, [
                 'authors' => [$authorData],
@@ -99,7 +99,7 @@ trait CreatesTestRecipes
             'with_relationships' => true,
         ]);
     }
-    
+
     /**
      * Create multiple recipes using the factory with FakerRestaurant.
      * Leverages the improved RecipeFactory with realistic food data.
@@ -107,13 +107,13 @@ trait CreatesTestRecipes
     protected function createMultipleRecipes(int $count = 5, array $options = []): array
     {
         $generateRecipeAction = app(GenerateRecipeAction::class);
-        
+
         return $generateRecipeAction->execute(array_merge([
             'count' => $count,
             'with_relationships' => true,
         ], $options));
     }
-    
+
     /**
      * Create a recipe using factory without relationships.
      */
@@ -121,7 +121,7 @@ trait CreatesTestRecipes
     {
         return Recipe::factory()->create($overrides);
     }
-    
+
     /**
      * Create a recipe with factory complete method.
      * Uses the enhanced factory with FakerRestaurant data.

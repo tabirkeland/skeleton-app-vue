@@ -31,4 +31,8 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'pexels' => [
+        'base_url' => env('PEXELS_BASE_URL', 'https://api.pexels.com/v1'),
+        'api_key' => env('PEXELS_API_KEY'),
+    ],
 ];

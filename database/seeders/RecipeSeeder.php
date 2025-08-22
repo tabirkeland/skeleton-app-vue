@@ -13,7 +13,7 @@ class RecipeSeeder extends Seeder
     public function run(): void
     {
         $generateRecipeAction = app(GenerateRecipeAction::class);
-        
+
         $recipes = [
             [
                 'name' => 'Classic Chocolate Chip Cookies',
@@ -383,7 +383,7 @@ class RecipeSeeder extends Seeder
                 'with_relationships' => true,
             ]);
         }
-        
+
         $this->command->info('Recipe seeder completed with categories!');
     }
 }

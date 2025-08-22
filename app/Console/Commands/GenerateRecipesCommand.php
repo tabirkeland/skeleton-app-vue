@@ -35,12 +35,12 @@ class GenerateRecipesCommand extends Command
     public function handle(GenerateRecipeAction $generateRecipeAction)
     {
         $count = (int) $this->option('count');
-        
+
         $this->info("Generating {$count} recipes with enhanced FakerRestaurant data...");
-        
+
         $progressBar = $this->output->createProgressBar($count);
         $progressBar->start();
-        
+
         // Prepare parameters for the action
         $parameters = [
             'count' => $count,
@@ -56,21 +56,21 @@ class GenerateRecipesCommand extends Command
                 $progressBar->advance();
             },
         ];
-        
+
         // Execute the action
         $recipes = $generateRecipeAction->execute($parameters);
-        
+
         $progressBar->finish();
         $this->newLine();
-        
+
         // Display summary
         $this->info("Successfully generated {$count} recipes!");
-        
+
         if ($this->output->isVerbose()) {
             $this->newLine();
             $this->table(
                 ['Recipe Name', 'Category', 'Ingredients', 'Steps', 'Authors'],
-                collect($recipes)->map(fn($recipe) => [
+                collect($recipes)->map(fn ($recipe) => [
                     $recipe->name,
                     $recipe->category ?? 'N/A',
                     $recipe->ingredients->count(),

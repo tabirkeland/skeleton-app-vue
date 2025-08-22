@@ -3,16 +3,17 @@
 namespace App\Actions\Recipe;
 
 use App\Models\Recipe;
-use App\Contracts\Action;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
-class SearchRecipesAction implements Action
+class SearchRecipesAction
 {
     /**
      * Create a new SearchRecipesAction instance.
      */
-    public function __construct(protected Recipe $recipe) { }
+    public function __construct(protected Recipe $recipe)
+    {
+    }
 
     /**
      * Execute recipe search with GraphQL-validated parameters.
@@ -20,13 +21,13 @@ class SearchRecipesAction implements Action
      * Returns a query builder for Lighthouse's @paginate directive.
      * Lighthouse will handle the actual pagination.
      *
-     * @param  array  $parameters Search parameters already validated by GraphQL
+     * @param  array  $searchParameters Search parameters already validated by GraphQL
      * @return Builder Query builder for Lighthouse to paginate
      */
-    public function execute(array $parameters = []): mixed
+    public function execute(array $searchParameters): Builder
     {
         // Prepare and normalize search filters
-        $filters = $this->prepareSearchFilters($parameters);
+        $filters = $this->prepareSearchFilters($searchParameters);
 
         // Build and return the search query
         return $this->buildSearchQuery($filters);
@@ -39,21 +40,20 @@ class SearchRecipesAction implements Action
      * Parameters are already validated by GraphQL - this handles formatting.
      *
      * @param  array  $parameters GraphQL-validated search parameters
-     *
      * @return array Normalized filters ready for query building
      */
     protected function prepareSearchFilters(array $parameters): array
     {
         $filters = [];
 
-        // Normalize author email(s) for consistent searching
-        if (!empty($parameters['author_email'])) {
-            $filters['author_emails'] = $this->normalizeEmails($parameters['author_email']);
-        }
-
         // Normalize keyword for better search matching
         if (!empty($parameters['keyword'])) {
             $filters['keyword'] = $this->normalizeSearchKeyword($parameters['keyword']);
+        }
+
+        // Normalize author email(s) for consistent searching
+        if (!empty($parameters['author_email'])) {
+            $filters['author_emails'] = $this->normalizeEmails($parameters['author_email']);
         }
 
         // Normalize ingredient(s) for consistent ingredient matching
@@ -67,8 +67,8 @@ class SearchRecipesAction implements Action
     /**
      * Normalize a single value based on type.
      *
-     * @param string $value The value to normalize
-     * @param bool $lowercase Whether to convert to lowercase
+     * @param  string  $value The value to normalize
+     * @param  bool  $lowercase Whether to convert to lowercase
      * @return string The normalized value
      */
     private function normalize(string $value, bool $lowercase = false): string
@@ -81,8 +81,8 @@ class SearchRecipesAction implements Action
     /**
      * Normalize comma-separated values into an array.
      *
-     * @param string $values Comma-separated values
-     * @param bool $lowercase Whether to convert each value to lowercase
+     * @param  string  $values Comma-separated values
+     * @param  bool  $lowercase Whether to convert each value to lowercase
      * @return array Normalized array of values
      */
     private function normalizeMultiple(string $values, bool $lowercase = false): array

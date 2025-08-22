@@ -194,15 +194,15 @@ class GenerateRecipesCommandTest extends TestCase
         $this->assertGreaterThan(0, $recipe->cook_time);
         $this->assertGreaterThan(0, $recipe->servings);
         $this->assertNotEmpty($recipe->image_url);
-        
+
         // Check category is populated with valid value
         $this->assertNotEmpty($recipe->category);
         $validCategories = [
-            'Appetizer', 'Breakfast', 'Lunch', 'Dinner', 'Dessert', 
-            'Snack', 'Beverage', 'Salad', 'Soup', 'Main Course', 
+            'Appetizer', 'Breakfast', 'Lunch', 'Dinner', 'Dessert',
+            'Snack', 'Beverage', 'Salad', 'Soup', 'Main Course',
             'Side Dish', 'Pasta', 'Seafood', 'Vegetarian', 'Vegan',
             'Gluten-Free', 'Keto', 'Mediterranean', 'Asian', 'Italian',
-            'Mexican', 'American', 'French', 'Indian', 'Thai'
+            'Mexican', 'American', 'French', 'Indian', 'Thai',
         ];
         $this->assertContains($recipe->category, $validCategories);
 
@@ -293,7 +293,7 @@ class GenerateRecipesCommandTest extends TestCase
             ->assertExitCode(0);
 
         $recipes = Recipe::all();
-        
+
         // Check that recipe names are more realistic (not just random words)
         foreach ($recipes as $recipe) {
             // Names should contain food-related terms or cooking methods
@@ -303,16 +303,16 @@ class GenerateRecipesCommandTest extends TestCase
                 'Recipe names should be properly capitalized'
             );
         }
-        
+
         // Check ingredients are food-related
         $allIngredients = $recipes->flatMap(function ($recipe) {
             return $recipe->ingredients->pluck('name');
         });
-        
+
         // Should have some realistic ingredients (not just random words)
         $this->assertNotEmpty($allIngredients);
     }
-    
+
     /**
      * @test
      */

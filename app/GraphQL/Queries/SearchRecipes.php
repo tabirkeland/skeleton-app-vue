@@ -2,8 +2,8 @@
 
 namespace App\GraphQL\Queries;
 
-use Illuminate\Database\Eloquent\Builder;
 use App\Actions\Recipe\SearchRecipesAction;
+use Illuminate\Database\Eloquent\Builder;
 
 class SearchRecipes
 {
