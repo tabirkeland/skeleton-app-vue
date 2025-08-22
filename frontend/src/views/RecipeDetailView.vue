@@ -30,8 +30,21 @@
     <!-- Recipe Content -->
     <div v-if="recipe && !loading" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Hero Header -->
-      <div class="bg-gradient-to-r from-alaskan-500 to-ocean-600 text-white rounded-2xl p-8 md:p-12 mb-8 shadow-xl">
-        <h1 class="text-3xl md:text-5xl font-bold mb-6">{{ recipe.name }}</h1>
+      <div class="relative bg-gradient-to-r from-alaskan-500 to-ocean-600 text-white rounded-2xl overflow-hidden mb-8 shadow-xl">
+        <!-- Background Image -->
+        <div v-if="recipe.image_url" class="absolute inset-0">
+          <img 
+            :src="recipe.image_url" 
+            :alt="recipe.name"
+            class="w-full h-full object-cover opacity-30"
+            @error="handleImageError"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/40 to-transparent"></div>
+        </div>
+        
+        <!-- Content -->
+        <div class="relative p-8 md:p-12">
+          <h1 class="text-3xl md:text-5xl font-bold mb-6">{{ recipe.name }}</h1>
         
         <!-- Recipe Meta -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -84,6 +97,7 @@
           </div>
         </div>
       </div>
+    </div>
 
       <!-- Content Sections -->
       <div class="space-y-8">
@@ -166,6 +180,11 @@ const { result, loading, error, refetch } = useQuery(
 
 // Computed recipe data
 const recipe = computed(() => result.value?.recipe)
+
+// Handle image load errors
+const handleImageError = (event) => {
+  event.target.style.display = 'none'
+}
 
 // Utility functions
 const formatDate = (dateString) => {

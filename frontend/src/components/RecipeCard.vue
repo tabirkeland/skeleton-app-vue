@@ -1,5 +1,19 @@
 <template>
   <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 overflow-hidden group">
+    <!-- Recipe Image -->
+    <div class="relative h-48 bg-gradient-to-br from-alaskan-100 to-ocean-100 overflow-hidden">
+      <img 
+        v-if="recipe.image_url" 
+        :src="recipe.image_url" 
+        :alt="recipe.name"
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        @error="handleImageError"
+      />
+      <div v-else class="w-full h-full flex items-center justify-center">
+        <ChefHat :size="48" class="text-alaskan-400 opacity-50" />
+      </div>
+    </div>
+    
     <!-- Recipe Header -->
     <div class="p-6 pb-4">
       <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-alaskan-600 transition-colors">
@@ -72,7 +86,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { ChefHat, Calendar, Utensils, ClipboardList, Eye } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -81,6 +95,12 @@ const props = defineProps({
     required: true
   }
 })
+
+// Handle image load errors
+const handleImageError = (event) => {
+  event.target.style.display = 'none'
+  event.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-alaskan-100 to-ocean-100"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-alaskan-400 opacity-50"><path d="M17 11h1a3 3 0 0 1 0 6h-1"></path><path d="M9 12v6"></path><path d="M13 12v6"></path><path d="M14 7.86c.1-.3.3-.6.6-.7a9.04 9.04 0 0 1 2.81-.2c.34.03.68.12 1 .28.67.3.98.94 1.08 1.59a8.99 8.99 0 0 1-.01 3.18 2 2 0 0 1-1.33 1.59c-.34.1-.69.16-1.05.16"></path><path d="M7 7c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V7z"></path><path d="M5 11h1a3 3 0 0 1 0 6H5"></path><path d="M21 12h1"></path></svg></div>'
+}
 
 // Utility functions
 const formatDate = (dateString) => {
