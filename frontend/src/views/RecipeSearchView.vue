@@ -10,8 +10,7 @@
         <div class="flex justify-center">
           <img src="/src/assets/logo-text.png" alt="Wild Alaskan Recipes" class="h-40 md:h-56 lg:h-64 filter brightness-0 invert drop-shadow-lg">
         </div>
-        <h1 class="text-3xl md:text-4xl font-bold mb-4 drop-shadow-lg">Find Amazing Wild Alaskan Recipes</h1>
-        <p class="text-lg md:text-xl opacity-95 drop-shadow-md">Discover delicious recipes using our advanced search filters</p>
+        <HeroText />
       </div>
     </div>
 
@@ -259,6 +258,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useLazyQuery } from '@vue/apollo-composable'
 import { SEARCH_RECIPES } from '../graphql/queries'
 import RecipeCard from '../components/RecipeCard.vue'
+import HeroText from '../components/HeroText.vue'
 import { Search, Utensils, Mail, X, Plus, Trash2, Loader2, FileText, UtensilsCrossed, Rocket } from 'lucide-vue-next'
 
 // Reactive search parameters
@@ -267,7 +267,7 @@ const searchParams = reactive({
   ingredients: [],
   authors: [],
   page: 1,
-  perPage: 12
+  perPage: 8
 })
 
 // Temporary input states for adding new filters
@@ -457,7 +457,8 @@ const cancelAuthorInput = () => {
 
 // Component is ready
 onMounted(() => {
-  // Component mounted
+  // Load initial recipes on page load
+  load()
 })
 </script>
 
