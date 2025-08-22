@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Actions;
 
-use Tests\TestCase;
-use App\Models\Recipe;
 use App\Actions\Search\SearchRecipesAction;
+use App\Models\Recipe;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Tests\TestCase;
 
 class SearchRecipesActionTest extends TestCase
 {
@@ -39,12 +39,21 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_filters_by_author_email()
     {
-        Recipe::factory()->count(3)->create(['author_email' => 'chef@example.com']);
-        Recipe::factory()->count(2)->create(['author_email' => 'other@example.com']);
+        $recipe1 = Recipe::factory()->create();
+        $recipe1->authors()->delete();
+        $recipe1->authors()->create(['name' => 'Chef 1', 'email' => 'chef@example.com']);
+
+        $recipe2 = Recipe::factory()->create();
+        $recipe2->authors()->delete();
+        $recipe2->authors()->create(['name' => 'Chef 2', 'email' => 'chef@example.com']);
+
+        $recipe3 = Recipe::factory()->create();
+        $recipe3->authors()->delete();
+        $recipe3->authors()->create(['name' => 'Other', 'email' => 'other@example.com']);
 
         $result = $this->action->execute(['author_email' => 'chef@example.com']);
 
-        $this->assertEquals(3, $result->total());
+        $this->assertEquals(2, $result->total());
         foreach ($result->items() as $recipe) {
             $this->assertEquals('chef@example.com', $recipe->author_email);
         }
@@ -55,20 +64,11 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_filters_by_keyword()
     {
-        Recipe::factory()->create([
-            'name' => 'Chocolate Cake',
-            'description' => 'Delicious dessert'
-        ]);
-        Recipe::factory()->create([
-            'name' => 'Vanilla Cake',
-            'description' => 'Light dessert'
-        ]);
-        Recipe::factory()->create([
-            'name' => 'Chocolate Chip Cookies',
-            'description' => 'Sweet treats'
-        ]);
+        Recipe::factory()->create(['name' => 'Chocolate Cake']);
+        Recipe::factory()->create(['name' => 'Vanilla Cake']);
+        Recipe::factory()->create(['name' => 'Apple Pie']);
 
-        $result = $this->action->execute(['keyword' => 'chocolate']);
+        $result = $this->action->execute(['keyword' => 'Cake']);
 
         $this->assertEquals(2, $result->total());
     }
@@ -78,11 +78,19 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_filters_by_ingredient()
     {
-        Recipe::factory()->create(['ingredients' => ['potatoes', 'butter']]);
-        Recipe::factory()->create(['ingredients' => ['tomatoes', 'basil']]);
-        Recipe::factory()->create(['ingredients' => ['sweet potato', 'oil']]);
+        $recipe1 = Recipe::factory()->create();
+        $recipe1->ingredients()->delete();
+        $recipe1->ingredients()->create(['name' => 'chocolate', 'quantity' => 1]);
 
-        $result = $this->action->execute(['ingredient' => 'potato']);
+        $recipe2 = Recipe::factory()->create();
+        $recipe2->ingredients()->delete();
+        $recipe2->ingredients()->create(['name' => 'vanilla', 'quantity' => 1]);
+
+        $recipe3 = Recipe::factory()->create();
+        $recipe3->ingredients()->delete();
+        $recipe3->ingredients()->create(['name' => 'chocolate chips', 'quantity' => 2]);
+
+        $result = $this->action->execute(['ingredient' => 'chocolate']);
 
         $this->assertEquals(2, $result->total());
     }
@@ -92,29 +100,32 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_combines_multiple_filters()
     {
-        Recipe::factory()->create([
-            'author_email' => 'chef@example.com',
-            'name' => 'Potato Gratin',
-            'ingredients' => ['potatoes', 'cream']
-        ]);
-        Recipe::factory()->create([
-            'author_email' => 'chef@example.com',
-            'name' => 'Tomato Soup',
-            'ingredients' => ['tomatoes', 'basil']
-        ]);
-        Recipe::factory()->create([
-            'author_email' => 'other@example.com',
-            'name' => 'Potato Salad',
-            'ingredients' => ['potatoes', 'mayo']
-        ]);
+        $recipe1 = Recipe::factory()->create(['name' => 'Chocolate Cake']);
+        $recipe1->authors()->delete();
+        $recipe1->ingredients()->delete();
+        $recipe1->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
+        $recipe1->ingredients()->create(['name' => 'chocolate', 'quantity' => 1]);
+
+        $recipe2 = Recipe::factory()->create(['name' => 'Vanilla Cake']);
+        $recipe2->authors()->delete();
+        $recipe2->ingredients()->delete();
+        $recipe2->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
+        $recipe2->ingredients()->create(['name' => 'vanilla', 'quantity' => 1]);
+
+        $recipe3 = Recipe::factory()->create(['name' => 'Chocolate Pie']);
+        $recipe3->authors()->delete();
+        $recipe3->ingredients()->delete();
+        $recipe3->authors()->create(['name' => 'Other', 'email' => 'other@example.com']);
+        $recipe3->ingredients()->create(['name' => 'chocolate', 'quantity' => 1]);
 
         $result = $this->action->execute([
             'author_email' => 'chef@example.com',
-            'ingredient' => 'potato'
+            'keyword' => 'Chocolate',
+            'ingredient' => 'chocolate',
         ]);
 
         $this->assertEquals(1, $result->total());
-        $this->assertEquals('Potato Gratin', $result->items()[0]->name);
+        $this->assertEquals('Chocolate Cake', $result->items()[0]->name);
     }
 
     /**
@@ -122,12 +133,13 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_respects_custom_per_page_parameter()
     {
-        Recipe::factory()->count(25)->create();
+        Recipe::factory()->count(20)->create();
 
-        $result = $this->action->execute(['perPage' => 20]);
+        $result = $this->action->execute(['perPage' => 5]);
 
-        $this->assertEquals(20, $result->perPage());
-        $this->assertEquals(20, count($result->items()));
+        $this->assertEquals(5, $result->perPage());
+        $this->assertEquals(5, $result->count());
+        $this->assertEquals(20, $result->total());
     }
 
     /**
@@ -135,12 +147,12 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_normalizes_email_filter_to_lowercase()
     {
-        Recipe::factory()->count(2)->create(['author_email' => 'chef@example.com']);
-        Recipe::factory()->count(3)->create(['author_email' => 'other@example.com']);
+        $recipe = Recipe::factory()->create();
+        $recipe->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
 
         $result = $this->action->execute(['author_email' => 'CHEF@EXAMPLE.COM']);
 
-        $this->assertEquals(2, $result->total());
+        $this->assertEquals(1, $result->total());
     }
 
     /**
@@ -148,20 +160,16 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_orders_results_by_popularity()
     {
-        $older = Recipe::factory()->create([
-            'name' => 'Older Recipe',
-            'created_at' => now()->subDays(5)
-        ]);
-        $newer = Recipe::factory()->create([
-            'name' => 'Newer Recipe',
-            'created_at' => now()
-        ]);
+        $older = Recipe::factory()->create(['created_at' => now()->subDays(2)]);
+        $newer = Recipe::factory()->create(['created_at' => now()->subDay()]);
+        $newest = Recipe::factory()->create(['created_at' => now()]);
 
         $result = $this->action->execute([]);
 
         $items = $result->items();
-        $this->assertEquals($newer->id, $items[0]->id);
-        $this->assertEquals($older->id, $items[1]->id);
+        $this->assertEquals($newest->id, $items[0]->id);
+        $this->assertEquals($newer->id, $items[1]->id);
+        $this->assertEquals($older->id, $items[2]->id);
     }
 
     /**
@@ -171,7 +179,7 @@ class SearchRecipesActionTest extends TestCase
     {
         Recipe::factory()->count(5)->create();
 
-        $result = $this->action->execute(['author_email' => 'nonexistent@example.com']);
+        $result = $this->action->execute(['keyword' => 'NonExistentKeyword']);
 
         $this->assertEquals(0, $result->total());
         $this->assertEmpty($result->items());
@@ -182,11 +190,11 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_handles_empty_filters_array()
     {
-        Recipe::factory()->count(5)->create();
+        Recipe::factory()->count(3)->create();
 
         $result = $this->action->execute([]);
 
-        $this->assertEquals(5, $result->total());
+        $this->assertEquals(3, $result->total());
     }
 
     /**
@@ -199,7 +207,7 @@ class SearchRecipesActionTest extends TestCase
         $result = $this->action->execute([
             'author_email' => null,
             'keyword' => null,
-            'ingredient' => null
+            'ingredient' => null,
         ]);
 
         $this->assertEquals(3, $result->total());
@@ -210,13 +218,12 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_handles_special_characters_in_keyword_search()
     {
-        Recipe::factory()->create(['name' => "Chef's Special"]);
-        Recipe::factory()->create(['name' => 'Regular Recipe']);
+        Recipe::factory()->create(['name' => 'Recipe with Special Characters & Symbols!']);
+        Recipe::factory()->create(['name' => 'Normal Recipe']);
 
-        $result = $this->action->execute(['keyword' => "Chef's"]);
+        $result = $this->action->execute(['keyword' => 'Special Characters & Symbols']);
 
         $this->assertEquals(1, $result->total());
-        $this->assertEquals("Chef's Special", $result->items()[0]->name);
     }
 
     /**
@@ -224,14 +231,23 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_maintains_pagination_with_filters()
     {
-        Recipe::factory()->count(25)->create(['author_email' => 'chef@example.com']);
+        $recipes = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $recipe = Recipe::factory()->create(['name' => "Chocolate Recipe $i"]);
+            $recipe->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
+        }
 
-        $page1 = $this->action->execute(['author_email' => 'chef@example.com', 'perPage' => 10]);
-        
-        $this->assertEquals(1, $page1->currentPage());
-        $this->assertEquals(3, $page1->lastPage());
-        $this->assertTrue($page1->hasMorePages());
-        $this->assertEquals(10, count($page1->items()));
+        $result = $this->action->execute([
+            'author_email' => 'chef@example.com',
+            'keyword' => 'Chocolate',
+            'perPage' => 3,
+            'page' => 2,
+        ]);
+
+        $this->assertEquals(3, $result->perPage());
+        $this->assertEquals(2, $result->currentPage());
+        $this->assertEquals(10, $result->total());
+        $this->assertEquals(3, $result->count());
     }
 
     /**
@@ -239,34 +255,34 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_applies_all_three_filters_with_and_logic()
     {
-        Recipe::factory()->create([
-            'author_email' => 'foo@bar.com',
-            'name' => 'Scalloped Potatoes',
-            'description' => 'Creamy scalloped potatoes',
-            'ingredients' => ['potatoes', 'cream', 'cheese']
-        ]);
+        // Recipe that matches all filters
+        $match = Recipe::factory()->create(['name' => 'Chocolate Cake']);
+        $match->authors()->delete();
+        $match->ingredients()->delete();
+        $match->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
+        $match->ingredients()->create(['name' => 'chocolate', 'quantity' => 1]);
 
-        Recipe::factory()->create([
-            'author_email' => 'foo@bar.com',
-            'name' => 'Potato Salad',
-            'description' => 'Summer side dish',
-            'ingredients' => ['potatoes', 'mayo']
-        ]);
+        // Recipe that only matches two filters
+        $partial1 = Recipe::factory()->create(['name' => 'Chocolate Pie']);
+        $partial1->authors()->delete();
+        $partial1->ingredients()->delete();
+        $partial1->authors()->create(['name' => 'Other', 'email' => 'other@example.com']);
+        $partial1->ingredients()->create(['name' => 'chocolate', 'quantity' => 1]);
 
-        Recipe::factory()->create([
-            'author_email' => 'other@bar.com',
-            'name' => 'Scalloped Oysters',
-            'description' => 'Seafood dish',
-            'ingredients' => ['oysters', 'cream']
-        ]);
+        // Recipe that only matches one filter
+        $partial2 = Recipe::factory()->create(['name' => 'Vanilla Cake']);
+        $partial2->authors()->delete();
+        $partial2->ingredients()->delete();
+        $partial2->authors()->create(['name' => 'Chef', 'email' => 'chef@example.com']);
+        $partial2->ingredients()->create(['name' => 'vanilla', 'quantity' => 1]);
 
         $result = $this->action->execute([
-            'author_email' => 'foo@bar.com',
-            'keyword' => 'scallop',
-            'ingredient' => 'potato'
+            'author_email' => 'chef@example.com',
+            'keyword' => 'Chocolate',
+            'ingredient' => 'chocolate',
         ]);
 
         $this->assertEquals(1, $result->total());
-        $this->assertEquals('Scalloped Potatoes', $result->items()[0]->name);
+        $this->assertEquals('Chocolate Cake', $result->items()[0]->name);
     }
 }

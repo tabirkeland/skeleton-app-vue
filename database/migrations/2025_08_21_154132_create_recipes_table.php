@@ -15,19 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description');
-            $table->json('ingredients');
-            $table->json('steps');
-            $table->string('author_email');
             $table->string('slug')->unique();
+            $table->string('image_url')->nullable(); // Optional: for recipe images
+            $table->integer('prep_time')->nullable(); // Optional: in minutes
+            $table->integer('cook_time')->nullable(); // Optional: in minutes
+            $table->integer('servings')->nullable(); // Optional: number of servings
             $table->timestamps();
 
-            // Performance indexes
-            $table->index(['author_email'], 'idx_author_email');
-            $table->index(['slug'], 'idx_slug');
-            $table->index(['created_at'], 'idx_created_at');
-
-            // Full-text search indexes for name and description
-            $table->fullText(['name', 'description'], 'idx_fulltext_search');
+            // Indexes for performance
+            $table->index('slug');
+            $table->fullText(['name', 'description']);
         });
     }
 

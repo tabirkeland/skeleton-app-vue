@@ -7,15 +7,27 @@ use Illuminate\Database\Eloquent\Builder;
 class RecipeBuilder extends Builder
 {
     /**
-     * Filter recipes by author email.
+     * Search by author email through relationship.
      */
     public function byAuthor(string $email): self
     {
-        return $this->where('author_email', $email);
+        return $this->whereHas('authors', function ($query) use ($email) {
+            $query->where('email', $email);
+        });
     }
 
     /**
-     * Search across name, description, ingredients, and steps using LIKE and JSON_SEARCH.
+     * Search by author name through relationship.
+     */
+    public function byAuthorName(string $name): self
+    {
+        return $this->whereHas('authors', function ($query) use ($name) {
+            $query->where('name', 'LIKE', "%{$name}%");
+        });
+    }
+
+    /**
+     * Search by keyword across multiple fields.
      */
     public function searchKeyword(string $keyword): self
     {
@@ -24,30 +36,63 @@ class RecipeBuilder extends Builder
         return $this->where(function ($query) use ($searchTerm) {
             $query->where('name', 'LIKE', $searchTerm)
                 ->orWhere('description', 'LIKE', $searchTerm)
-                ->orWhereRaw("JSON_SEARCH(ingredients, 'one', ?) IS NOT NULL", [$searchTerm])
-                ->orWhereRaw("JSON_SEARCH(steps, 'one', ?) IS NOT NULL", [$searchTerm]);
+                ->orWhereHas('ingredients', function ($q) use ($searchTerm) {
+                    $q->where('name', 'LIKE', $searchTerm);
+                })
+                ->orWhereHas('steps', function ($q) use ($searchTerm) {
+                    $q->where('title', 'LIKE', $searchTerm)
+                        ->orWhere('description', 'LIKE', $searchTerm);
+                });
         });
     }
 
     /**
-     * Case-insensitive ingredient matching using JSON_SEARCH.
+     * Search by ingredient name through relationship.
      */
     public function withIngredient(string $ingredient): self
     {
-        return $this->whereRaw(
-            "JSON_SEARCH(LOWER(ingredients), 'one', LOWER(?)) IS NOT NULL",
-            ["%{$ingredient}%"]
-        );
+        return $this->whereHas('ingredients', function ($query) use ($ingredient) {
+            $query->where('name', 'LIKE', "%{$ingredient}%");
+        });
     }
 
     /**
-     * Combined search supporting AND logic across multiple filters.
+     * Search with all ingredients.
+     */
+    public function withAllIngredients(array $ingredients): self
+    {
+        foreach ($ingredients as $ingredient) {
+            $this->withIngredient($ingredient);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Search with any of the ingredients.
+     */
+    public function withAnyIngredient(array $ingredients): self
+    {
+        return $this->whereHas('ingredients', function ($query) use ($ingredients) {
+            $query->where(function ($q) use ($ingredients) {
+                foreach ($ingredients as $ingredient) {
+                    $q->orWhere('name', 'LIKE', "%{$ingredient}%");
+                }
+            });
+        });
+    }
+
+    /**
+     * Combined search with filters.
      */
     public function search(array $filters): self
     {
         return $this->when(
             isset($filters['author_email']),
             fn ($query) => $query->byAuthor($filters['author_email'])
+        )->when(
+            isset($filters['author_name']),
+            fn ($query) => $query->byAuthorName($filters['author_name'])
         )->when(
             isset($filters['keyword']),
             fn ($query) => $query->searchKeyword($filters['keyword'])
@@ -58,7 +103,25 @@ class RecipeBuilder extends Builder
     }
 
     /**
-     * Order by creation date (newest first).
+     * Order by the number of steps.
+     */
+    public function orderByStepCount(string $direction = 'asc'): self
+    {
+        return $this->withCount('steps')
+            ->orderBy('steps_count', $direction);
+    }
+
+    /**
+     * Order by the number of ingredients.
+     */
+    public function orderByIngredientCount(string $direction = 'asc'): self
+    {
+        return $this->withCount('ingredients')
+            ->orderBy('ingredients_count', $direction);
+    }
+
+    /**
+     * Popular recipes (ordered by creation date desc).
      */
     public function popular(): self
     {
@@ -66,21 +129,18 @@ class RecipeBuilder extends Builder
     }
 
     /**
-     * Filter recipes created within the last N days.
+     * Recent recipes.
      */
-    public function recent(int $days = 30): self
+    public function recent(int $days = 7): self
     {
         return $this->where('created_at', '>=', now()->subDays($days));
     }
 
     /**
-     * Add ingredient and step counts using JSON_LENGTH.
+     * Add ingredient and step counts.
      */
     public function withCounts(): self
     {
-        return $this->selectRaw('*,
-            JSON_LENGTH(ingredients) as ingredient_count,
-            JSON_LENGTH(steps) as step_count'
-        );
+        return $this->withCount(['ingredients', 'steps']);
     }
 }

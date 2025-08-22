@@ -15,28 +15,91 @@ class GraphQLTest extends TestCase
         parent::setUp();
 
         // Create test recipes for search functionality
-        Recipe::factory()->create([
+        $recipe1 = Recipe::factory()->create([
             'name' => 'Chocolate Chip Cookies',
             'description' => 'Classic chocolate chip cookies with vanilla',
-            'ingredients' => ['flour', 'chocolate chips', 'vanilla', 'butter', 'sugar'],
-            'steps' => ['Mix dry ingredients', 'Add wet ingredients', 'Bake for 12 minutes'],
-            'author_email' => 'baker@example.com',
         ]);
 
-        Recipe::factory()->create([
+        // Clear auto-created relationships and create specific test data
+        $recipe1->authors()->delete();
+        $recipe1->ingredients()->delete();
+        $recipe1->steps()->delete();
+
+        $recipe1->authors()->create([
+            'name' => 'Baker',
+            'email' => 'baker@example.com',
+        ]);
+
+        $recipe1->ingredients()->createMany([
+            ['name' => 'flour', 'quantity' => 2, 'unit' => 'cups'],
+            ['name' => 'chocolate chips', 'quantity' => 1, 'unit' => 'cup'],
+            ['name' => 'vanilla', 'quantity' => 1, 'unit' => 'tsp'],
+            ['name' => 'butter', 'quantity' => 0.5, 'unit' => 'cup'],
+            ['name' => 'sugar', 'quantity' => 0.75, 'unit' => 'cup'],
+        ]);
+
+        $recipe1->steps()->createMany([
+            ['title' => 'Prep', 'description' => 'Mix dry ingredients', 'order' => 1],
+            ['title' => 'Combine', 'description' => 'Add wet ingredients', 'order' => 2],
+            ['title' => 'Bake', 'description' => 'Bake for 12 minutes', 'order' => 3],
+        ]);
+
+        $recipe2 = Recipe::factory()->create([
             'name' => 'Vanilla Cake',
             'description' => 'Moist vanilla cake with buttercream frosting',
-            'ingredients' => ['flour', 'vanilla', 'butter', 'sugar', 'eggs', 'milk'],
-            'steps' => ['Mix ingredients', 'Pour into pan', 'Bake for 30 minutes', 'Add frosting'],
-            'author_email' => 'chef@example.com',
         ]);
 
-        Recipe::factory()->create([
+        $recipe2->authors()->delete();
+        $recipe2->ingredients()->delete();
+        $recipe2->steps()->delete();
+
+        $recipe2->authors()->create([
+            'name' => 'Chef',
+            'email' => 'chef@example.com',
+        ]);
+
+        $recipe2->ingredients()->createMany([
+            ['name' => 'flour', 'quantity' => 2.5, 'unit' => 'cups'],
+            ['name' => 'vanilla', 'quantity' => 2, 'unit' => 'tsp'],
+            ['name' => 'butter', 'quantity' => 1, 'unit' => 'cup'],
+            ['name' => 'sugar', 'quantity' => 1.5, 'unit' => 'cups'],
+            ['name' => 'eggs', 'quantity' => 3, 'unit' => ''],
+            ['name' => 'milk', 'quantity' => 1, 'unit' => 'cup'],
+        ]);
+
+        $recipe2->steps()->createMany([
+            ['title' => 'Mix', 'description' => 'Mix ingredients', 'order' => 1],
+            ['title' => 'Pour', 'description' => 'Pour into pan', 'order' => 2],
+            ['title' => 'Bake', 'description' => 'Bake for 30 minutes', 'order' => 3],
+            ['title' => 'Frost', 'description' => 'Add frosting', 'order' => 4],
+        ]);
+
+        $recipe3 = Recipe::factory()->create([
             'name' => 'Beef Stew',
             'description' => 'Hearty beef stew with vegetables',
-            'ingredients' => ['beef', 'carrots', 'potatoes', 'onions', 'broth'],
-            'steps' => ['Brown beef', 'Add vegetables', 'Simmer for 2 hours'],
-            'author_email' => 'chef@example.com',
+        ]);
+
+        $recipe3->authors()->delete();
+        $recipe3->ingredients()->delete();
+        $recipe3->steps()->delete();
+
+        $recipe3->authors()->create([
+            'name' => 'Chef',
+            'email' => 'chef@example.com',
+        ]);
+
+        $recipe3->ingredients()->createMany([
+            ['name' => 'beef', 'quantity' => 2, 'unit' => 'lbs'],
+            ['name' => 'carrots', 'quantity' => 3, 'unit' => ''],
+            ['name' => 'potatoes', 'quantity' => 4, 'unit' => ''],
+            ['name' => 'onions', 'quantity' => 1, 'unit' => ''],
+            ['name' => 'broth', 'quantity' => 4, 'unit' => 'cups'],
+        ]);
+
+        $recipe3->steps()->createMany([
+            ['title' => 'Brown', 'description' => 'Brown beef', 'order' => 1],
+            ['title' => 'Add', 'description' => 'Add vegetables', 'order' => 2],
+            ['title' => 'Simmer', 'description' => 'Simmer for 2 hours', 'order' => 3],
         ]);
     }
 
@@ -66,8 +129,18 @@ class GraphQLTest extends TestCase
                     id
                     name
                     description
-                    ingredients
-                    steps
+                    ingredients {
+                        id
+                        name
+                        quantity
+                        unit
+                    }
+                    steps {
+                        id
+                        title
+                        description
+                        order
+                    }
                     author_email
                     slug
                     ingredient_count
@@ -80,9 +153,39 @@ class GraphQLTest extends TestCase
             'input' => [
                 'name' => 'Test Recipe',
                 'description' => 'A test recipe for unit testing',
-                'ingredients' => ['ingredient1', 'ingredient2', 'ingredient3'],
-                'steps' => ['step1', 'step2'],
-                'author_email' => 'test@example.com',
+                'authors' => [
+                    [
+                        'name' => 'Test Author',
+                        'email' => 'test@example.com',
+                    ],
+                ],
+                'ingredients' => [
+                    [
+                        'name' => 'ingredient1',
+                        'quantity' => 1,
+                        'unit' => 'cup',
+                    ],
+                    [
+                        'name' => 'ingredient2',
+                        'quantity' => 2,
+                        'unit' => 'tbsp',
+                    ],
+                    [
+                        'name' => 'ingredient3',
+                        'quantity' => 0.5,
+                        'unit' => 'tsp',
+                    ],
+                ],
+                'steps' => [
+                    [
+                        'description' => 'step1',
+                        'order' => 1,
+                    ],
+                    [
+                        'description' => 'step2',
+                        'order' => 2,
+                    ],
+                ],
             ],
         ];
 
@@ -98,8 +201,22 @@ class GraphQLTest extends TestCase
                         'id',
                         'name',
                         'description',
-                        'ingredients',
-                        'steps',
+                        'ingredients' => [
+                            '*' => [
+                                'id',
+                                'name',
+                                'quantity',
+                                'unit',
+                            ],
+                        ],
+                        'steps' => [
+                            '*' => [
+                                'id',
+                                'title',
+                                'description',
+                                'order',
+                            ],
+                        ],
                         'author_email',
                         'slug',
                         'ingredient_count',
@@ -111,8 +228,11 @@ class GraphQLTest extends TestCase
         $data = $response->json('data.createRecipe');
         $this->assertEquals('Test Recipe', $data['name']);
         $this->assertEquals('test-recipe', $data['slug']);
+        $this->assertEquals('test@example.com', $data['author_email']);
         $this->assertEquals(3, $data['ingredient_count']);
         $this->assertEquals(2, $data['step_count']);
+        $this->assertCount(3, $data['ingredients']);
+        $this->assertCount(2, $data['steps']);
     }
 
     public function test_can_search_recipes_without_filters()
@@ -224,7 +344,9 @@ class GraphQLTest extends TestCase
                     data {
                         id
                         name
-                        ingredients
+                        ingredients {
+                            name
+                        }
                     }
                     paginatorInfo {
                         total
@@ -250,7 +372,8 @@ class GraphQLTest extends TestCase
         $this->assertEquals(2, $data['paginatorInfo']['total']);
 
         foreach ($data['data'] as $recipe) {
-            $this->assertContains('vanilla', $recipe['ingredients']);
+            $ingredientNames = array_column($recipe['ingredients'], 'name');
+            $this->assertContains('vanilla', $ingredientNames);
         }
     }
 
@@ -301,7 +424,9 @@ class GraphQLTest extends TestCase
                         id
                         name
                         author_email
-                        ingredients
+                        ingredients {
+                            name
+                        }
                     }
                     paginatorInfo {
                         total
@@ -327,7 +452,8 @@ class GraphQLTest extends TestCase
         $data = $response->json('data.recipes');
         $this->assertEquals(1, $data['paginatorInfo']['total']);
         $this->assertEquals('chef@example.com', $data['data'][0]['author_email']);
-        $this->assertContains('flour', $data['data'][0]['ingredients']);
+        $ingredientNames = array_column($data['data'][0]['ingredients'], 'name');
+        $this->assertContains('flour', $ingredientNames);
     }
 
     public function test_can_get_single_recipe_by_slug()
@@ -340,8 +466,18 @@ class GraphQLTest extends TestCase
                     id
                     name
                     description
-                    ingredients
-                    steps
+                    ingredients {
+                        id
+                        name
+                        quantity
+                        unit
+                    }
+                    steps {
+                        id
+                        title
+                        description
+                        order
+                    }
                     author_email
                     slug
                     ingredient_count
@@ -368,8 +504,22 @@ class GraphQLTest extends TestCase
                         'id',
                         'name',
                         'description',
-                        'ingredients',
-                        'steps',
+                        'ingredients' => [
+                            '*' => [
+                                'id',
+                                'name',
+                                'quantity',
+                                'unit',
+                            ],
+                        ],
+                        'steps' => [
+                            '*' => [
+                                'id',
+                                'title',
+                                'description',
+                                'order',
+                            ],
+                        ],
                         'author_email',
                         'slug',
                         'ingredient_count',

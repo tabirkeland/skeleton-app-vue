@@ -20,6 +20,7 @@ class SearchRecipes
     {
         return $this->searchAction->execute([
             'author_email' => $args['author_email'] ?? null,
+            'author_name' => $args['author_name'] ?? null,
             'keyword' => $args['keyword'] ?? null,
             'ingredient' => $args['ingredient'] ?? null,
             'page' => $args['page'] ?? 1,

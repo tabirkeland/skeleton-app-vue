@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Builders\RecipeBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Recipe extends Model
@@ -19,10 +20,11 @@ class Recipe extends Model
     protected $fillable = [
         'name',
         'description',
-        'ingredients',
-        'steps',
-        'author_email',
         'slug',
+        'image_url',
+        'prep_time',
+        'cook_time',
+        'servings',
     ];
 
     /**
@@ -82,11 +84,19 @@ class Recipe extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'ingredients' => 'array',
-        'steps' => 'array',
+        'prep_time' => 'integer',
+        'cook_time' => 'integer',
+        'servings' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * The relationships that should always be loaded.
+     *
+     * @var array
+     */
+    protected $with = ['authors', 'ingredients', 'steps'];
 
     /**
      * Create a new Eloquent query builder for the model.
@@ -100,18 +110,58 @@ class Recipe extends Model
     }
 
     /**
-     * Get the ingredient count accessor.
+     * Get the authors for the recipe.
      */
-    public function getIngredientCountAttribute(): int
+    public function authors(): HasMany
     {
-        return is_array($this->ingredients) ? count($this->ingredients) : 0;
+        return $this->hasMany(RecipeAuthor::class);
     }
 
     /**
-     * Get the step count accessor.
+     * Get the ingredients for the recipe.
+     */
+    public function ingredients(): HasMany
+    {
+        return $this->hasMany(RecipeIngredient::class);
+    }
+
+    /**
+     * Get the steps for the recipe.
+     */
+    public function steps(): HasMany
+    {
+        return $this->hasMany(RecipeStep::class)->orderBy('order');
+    }
+
+    /**
+     * Get the primary author (first author).
+     */
+    public function getPrimaryAuthorAttribute()
+    {
+        return $this->authors->first();
+    }
+
+    /**
+     * Get the primary author email.
+     */
+    public function getAuthorEmailAttribute()
+    {
+        return $this->primary_author?->email;
+    }
+
+    /**
+     * Get ingredient count accessor.
+     */
+    public function getIngredientCountAttribute(): int
+    {
+        return $this->ingredients->count();
+    }
+
+    /**
+     * Get step count accessor.
      */
     public function getStepCountAttribute(): int
     {
-        return is_array($this->steps) ? count($this->steps) : 0;
+        return $this->steps->count();
     }
 }

@@ -2,14 +2,55 @@
 
 namespace Tests\Unit\Builders;
 
-use Tests\TestCase;
-use App\Models\Recipe;
 use App\Builders\RecipeBuilder;
+use App\Models\Recipe;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+use Tests\Traits\CreatesTestRecipes;
 
 class RecipeBuilderTest extends TestCase
 {
-    use RefreshDatabase;
+    use CreatesTestRecipes, RefreshDatabase;
+
+    /**
+     * Helper method to create a recipe with proper relationships.
+     * Uses the trait methods internally but provides the old interface for compatibility.
+     */
+    private function createTestRecipe(
+        array $recipeData = [],
+        string $authorEmail = null,
+        array $ingredientNames = [],
+        array $stepDescriptions = []
+    ): Recipe {
+        $recipe = Recipe::factory()->create($recipeData);
+
+        // Create author if provided
+        if ($authorEmail) {
+            $recipe->authors()->create([
+                'name' => 'Test Author',
+                'email' => $authorEmail,
+            ]);
+        }
+
+        // Create ingredients
+        foreach ($ingredientNames as $ingredientName) {
+            $recipe->ingredients()->create([
+                'name' => $ingredientName,
+                'quantity' => 1,
+                'unit' => null,
+            ]);
+        }
+
+        // Create steps
+        foreach ($stepDescriptions as $index => $stepDescription) {
+            $recipe->steps()->create([
+                'description' => $stepDescription,
+                'order' => $index + 1,
+            ]);
+        }
+
+        return $recipe;
+    }
 
     /**
      * @test
@@ -26,9 +67,9 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_filters_recipes_by_author_email()
     {
-        Recipe::factory()->create(['author_email' => 'chef@example.com']);
-        Recipe::factory()->create(['author_email' => 'cook@example.com']);
-        Recipe::factory()->create(['author_email' => 'baker@example.com']);
+        $this->createRecipeWithAuthor([], ['name' => 'Chef', 'email' => 'chef@example.com']);
+        $this->createRecipeWithAuthor([], ['name' => 'Cook', 'email' => 'cook@example.com']);
+        $this->createRecipeWithAuthor([], ['name' => 'Baker', 'email' => 'baker@example.com']);
 
         $recipes = Recipe::byAuthor('chef@example.com')->get();
 
@@ -44,15 +85,11 @@ class RecipeBuilderTest extends TestCase
         Recipe::factory()->create([
             'name' => 'Chocolate Cake',
             'description' => 'Sweet dessert',
-            'ingredients' => ['flour', 'eggs'],
-            'steps' => ['Mix', 'Bake']
         ]);
 
         Recipe::factory()->create([
             'name' => 'Vanilla Cake',
             'description' => 'Light dessert',
-            'ingredients' => ['flour', 'vanilla'],
-            'steps' => ['Mix', 'Bake']
         ]);
 
         $recipes = Recipe::searchKeyword('chocolate')->get();
@@ -69,15 +106,11 @@ class RecipeBuilderTest extends TestCase
         Recipe::factory()->create([
             'name' => 'Vanilla Cake',
             'description' => 'Chocolate frosting on top',
-            'ingredients' => ['flour', 'vanilla'],
-            'steps' => ['Mix', 'Bake']
         ]);
 
         Recipe::factory()->create([
             'name' => 'Carrot Cake',
             'description' => 'Healthy dessert',
-            'ingredients' => ['carrots', 'flour'],
-            'steps' => ['Mix', 'Bake']
         ]);
 
         $recipes = Recipe::searchKeyword('chocolate')->get();
@@ -91,19 +124,21 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_searches_by_keyword_in_ingredients()
     {
-        Recipe::factory()->create([
-            'name' => 'Salad',
-            'description' => 'Healthy meal',
-            'ingredients' => ['lettuce', 'chocolate dressing'],
-            'steps' => ['Toss', 'Serve']
-        ]);
+        $this->createRecipeWithIngredients(
+            ['name' => 'Salad', 'description' => 'Healthy meal'],
+            [
+                ['name' => 'lettuce', 'quantity' => 1],
+                ['name' => 'chocolate dressing', 'quantity' => 2, 'unit' => 'tbsp'],
+            ]
+        );
 
-        Recipe::factory()->create([
-            'name' => 'Soup',
-            'description' => 'Warm meal',
-            'ingredients' => ['vegetables', 'broth'],
-            'steps' => ['Boil', 'Serve']
-        ]);
+        $this->createRecipeWithIngredients(
+            ['name' => 'Soup', 'description' => 'Warm meal'],
+            [
+                ['name' => 'vegetables', 'quantity' => 1, 'unit' => 'cup'],
+                ['name' => 'broth', 'quantity' => 4, 'unit' => 'cups'],
+            ]
+        );
 
         $recipes = Recipe::searchKeyword('chocolate')->get();
 
@@ -116,19 +151,23 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_searches_by_keyword_in_steps()
     {
-        Recipe::factory()->create([
-            'name' => 'Brownies',
-            'description' => 'Dessert',
-            'ingredients' => ['flour', 'eggs'],
-            'steps' => ['Mix ingredients', 'Add chocolate chips', 'Bake']
-        ]);
+        $this->createRecipeWithSteps(
+            ['name' => 'Brownies', 'description' => 'Dessert'],
+            [
+                ['description' => 'Mix ingredients', 'order' => 1],
+                ['description' => 'Add chocolate chips', 'order' => 2],
+                ['description' => 'Bake', 'order' => 3],
+            ]
+        );
 
-        Recipe::factory()->create([
-            'name' => 'Cookies',
-            'description' => 'Snack',
-            'ingredients' => ['flour', 'sugar'],
-            'steps' => ['Mix', 'Shape', 'Bake']
-        ]);
+        $this->createRecipeWithSteps(
+            ['name' => 'Cookies', 'description' => 'Snack'],
+            [
+                ['description' => 'Mix', 'order' => 1],
+                ['description' => 'Shape', 'order' => 2],
+                ['description' => 'Bake', 'order' => 3],
+            ]
+        );
 
         $recipes = Recipe::searchKeyword('chocolate')->get();
 
@@ -141,16 +180,20 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_finds_recipes_with_specific_ingredient()
     {
-        Recipe::factory()->create([
-            'ingredients' => ['3 large potatoes', 'butter', 'milk']
+        $this->createRecipeWithIngredients([], [
+            ['name' => '3 large potatoes', 'quantity' => 3],
+            ['name' => 'butter', 'quantity' => 0.5, 'unit' => 'cup'],
+            ['name' => 'milk', 'quantity' => 1, 'unit' => 'cup'],
         ]);
 
-        Recipe::factory()->create([
-            'ingredients' => ['sweet potato', 'oil']
+        $this->createRecipeWithIngredients([], [
+            ['name' => 'sweet potato', 'quantity' => 2],
+            ['name' => 'oil', 'quantity' => 2, 'unit' => 'tbsp'],
         ]);
 
-        Recipe::factory()->create([
-            'ingredients' => ['carrots', 'onions']
+        $this->createRecipeWithIngredients([], [
+            ['name' => 'carrots', 'quantity' => 3],
+            ['name' => 'onions', 'quantity' => 1],
         ]);
 
         $recipes = Recipe::withIngredient('potato')->get();
@@ -163,13 +206,8 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_performs_case_insensitive_ingredient_search()
     {
-        Recipe::factory()->create([
-            'ingredients' => ['POTATOES', 'butter']
-        ]);
-
-        Recipe::factory()->create([
-            'ingredients' => ['Potato chips', 'salt']
-        ]);
+        $this->createTestRecipe([], null, ['POTATOES', 'butter']);
+        $this->createTestRecipe([], null, ['Potato chips', 'salt']);
 
         $recipes = Recipe::withIngredient('potato')->get();
 
@@ -181,23 +219,23 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_chains_multiple_query_methods()
     {
-        Recipe::factory()->create([
-            'author_email' => 'chef@example.com',
-            'name' => 'Potato Gratin',
-            'ingredients' => ['potatoes', 'cream', 'cheese']
-        ]);
+        $this->createTestRecipe(
+            ['name' => 'Potato Gratin'],
+            'chef@example.com',
+            ['potatoes', 'cream', 'cheese']
+        );
 
-        Recipe::factory()->create([
-            'author_email' => 'chef@example.com',
-            'name' => 'Tomato Soup',
-            'ingredients' => ['tomatoes', 'basil']
-        ]);
+        $this->createTestRecipe(
+            ['name' => 'Tomato Soup'],
+            'chef@example.com',
+            ['tomatoes', 'basil']
+        );
 
-        Recipe::factory()->create([
-            'author_email' => 'other@example.com',
-            'name' => 'Potato Salad',
-            'ingredients' => ['potatoes', 'mayo']
-        ]);
+        $this->createTestRecipe(
+            ['name' => 'Potato Salad'],
+            'other@example.com',
+            ['potatoes', 'mayo']
+        );
 
         $recipes = Recipe::query()
             ->byAuthor('chef@example.com')
@@ -213,31 +251,28 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_uses_combined_search_method()
     {
-        Recipe::factory()->create([
-            'author_email' => 'foo@bar.com',
-            'name' => 'Scalloped Potatoes',
-            'ingredients' => ['potatoes', 'cream'],
-            'description' => 'Creamy scalloped potatoes'
-        ]);
+        $this->createTestRecipe(
+            ['name' => 'Scalloped Potatoes', 'description' => 'Creamy scalloped potatoes'],
+            'foo@bar.com',
+            ['potatoes', 'cream']
+        );
 
-        Recipe::factory()->create([
-            'author_email' => 'foo@bar.com',
-            'name' => 'Fish and Chips',
-            'ingredients' => ['fish', 'potatoes'],
-            'description' => 'Classic British dish'
-        ]);
+        $this->createTestRecipe(
+            ['name' => 'Fish and Chips', 'description' => 'Classic British dish'],
+            'foo@bar.com',
+            ['fish', 'potatoes']
+        );
 
-        Recipe::factory()->create([
-            'author_email' => 'other@bar.com',
-            'name' => 'Scalloped Oysters',
-            'ingredients' => ['oysters', 'cream'],
-            'description' => 'Seafood dish'
-        ]);
+        $this->createTestRecipe(
+            ['name' => 'Scalloped Oysters', 'description' => 'Seafood dish'],
+            'other@bar.com',
+            ['oysters', 'cream']
+        );
 
         $recipes = Recipe::search([
             'author_email' => 'foo@bar.com',
             'keyword' => 'scallop',
-            'ingredient' => 'potato'
+            'ingredient' => 'potato',
         ])->get();
 
         $this->assertCount(1, $recipes);
@@ -251,7 +286,7 @@ class RecipeBuilderTest extends TestCase
     {
         $older = Recipe::factory()->create(['created_at' => now()->subDays(5)]);
         $newer = Recipe::factory()->create(['created_at' => now()]);
-        
+
         $recipes = Recipe::popular()->get();
 
         $this->assertEquals($newer->id, $recipes->first()->id);
@@ -289,9 +324,7 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_handles_special_characters_in_search()
     {
-        Recipe::factory()->create([
-            'ingredients' => ["Smith's potatoes", 'butter']
-        ]);
+        $this->createTestRecipe([], null, ["Smith's potatoes", 'butter']);
 
         $recipes = Recipe::withIngredient("Smith's")->get();
 
@@ -303,15 +336,15 @@ class RecipeBuilderTest extends TestCase
      */
     public function it_combines_search_with_popular_ordering()
     {
-        Recipe::factory()->create([
-            'author_email' => 'chef@example.com',
-            'created_at' => now()->subDays(5)
-        ]);
+        $recipe1 = $this->createTestRecipe(
+            ['created_at' => now()->subDays(5)],
+            'chef@example.com'
+        );
 
-        Recipe::factory()->create([
-            'author_email' => 'chef@example.com',
-            'created_at' => now()
-        ]);
+        $recipe2 = $this->createTestRecipe(
+            ['created_at' => now()],
+            'chef@example.com'
+        );
 
         $recipes = Recipe::search(['author_email' => 'chef@example.com'])
             ->popular()

@@ -23,7 +23,8 @@ class SearchRecipesAction implements Action
      */
     public function __construct(
         protected Recipe $recipe
-    ) { }
+    ) {
+    }
 
     /**
      * Execute recipe search with GraphQL-validated parameters.
@@ -61,17 +62,22 @@ class SearchRecipesAction implements Action
         $filters = [];
 
         // Normalize author email for consistent searching
-        if (!empty($parameters['author_email'])) {
+        if (! empty($parameters['author_email'])) {
             $filters['author_email'] = $this->normalizeEmail($parameters['author_email']);
         }
 
+        // Normalize author name for consistent searching
+        if (! empty($parameters['author_name'])) {
+            $filters['author_name'] = $this->normalizeSearchKeyword($parameters['author_name']);
+        }
+
         // Normalize keyword for better search matching
-        if (!empty($parameters['keyword'])) {
+        if (! empty($parameters['keyword'])) {
             $filters['keyword'] = $this->normalizeSearchKeyword($parameters['keyword']);
         }
 
         // Normalize ingredient for consistent ingredient matching
-        if (!empty($parameters['ingredient'])) {
+        if (! empty($parameters['ingredient'])) {
             $filters['ingredient'] = $this->normalizeIngredient($parameters['ingredient']);
         }
 
@@ -112,7 +118,7 @@ class SearchRecipesAction implements Action
         $query = $this->recipe->query();
 
         // Apply search filters using the RecipeBuilder's search method
-        if (!empty($filters)) {
+        if (! empty($filters)) {
             $query = $query->search($filters);
         }
 
@@ -121,6 +127,9 @@ class SearchRecipesAction implements Action
 
         // Add ingredient and step counts for better GraphQL response
         $query = $query->withCounts();
+
+        // Load relationships for GraphQL
+        $query = $query->with(['authors', 'ingredients', 'steps']);
 
         // Execute pagination
         return $query->paginate($perPage, ['*'], 'page', $page);
@@ -131,8 +140,9 @@ class SearchRecipesAction implements Action
      */
     public function hasSearchCriteria(array $parameters): bool
     {
-        return !empty($parameters['author_email']) ||
-               !empty($parameters['keyword']) ||
-               !empty($parameters['ingredient']);
+        return ! empty($parameters['author_email']) ||
+               ! empty($parameters['author_name']) ||
+               ! empty($parameters['keyword']) ||
+               ! empty($parameters['ingredient']);
     }
 }

@@ -29,17 +29,25 @@
         <h1 class="recipe-title">{{ recipe.name }}</h1>
         
         <div class="recipe-meta">
-          <div class="meta-item">
+          <div class="meta-item" v-if="recipe.primary_author">
             <span class="meta-label">👨‍🍳 Chef:</span>
-            <span class="meta-value">{{ recipe.author_email }}</span>
+            <span class="meta-value">{{ recipe.primary_author.name }}</span>
+          </div>
+          <div class="meta-item" v-if="recipe.prep_time">
+            <span class="meta-label">⏱️ Prep:</span>
+            <span class="meta-value">{{ recipe.prep_time }} min</span>
+          </div>
+          <div class="meta-item" v-if="recipe.cook_time">
+            <span class="meta-label">🔥 Cook:</span>
+            <span class="meta-value">{{ recipe.cook_time }} min</span>
+          </div>
+          <div class="meta-item" v-if="recipe.servings">
+            <span class="meta-label">🍽️ Servings:</span>
+            <span class="meta-value">{{ recipe.servings }}</span>
           </div>
           <div class="meta-item">
             <span class="meta-label">📅 Created:</span>
             <span class="meta-value">{{ formatDate(recipe.created_at) }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">🔄 Updated:</span>
-            <span class="meta-value">{{ formatDate(recipe.updated_at) }}</span>
           </div>
         </div>
 
@@ -69,11 +77,11 @@
         <div class="ingredients-list">
           <div 
             v-for="(ingredient, index) in recipe.ingredients" 
-            :key="index"
+            :key="ingredient.id || index"
             class="ingredient-item"
           >
             <span class="ingredient-number">{{ index + 1 }}</span>
-            <span class="ingredient-text">{{ ingredient }}</span>
+            <span class="ingredient-text">{{ ingredient.formatted || formatIngredient(ingredient) }}</span>
           </div>
         </div>
       </div>
@@ -83,13 +91,14 @@
         <h2 class="section-title">📋 Instructions</h2>
         <div class="steps-list">
           <div 
-            v-for="(step, index) in recipe.steps" 
-            :key="index"
+            v-for="step in recipe.steps" 
+            :key="step.id"
             class="step-item"
           >
-            <div class="step-number">{{ index + 1 }}</div>
+            <div class="step-number">{{ step.order }}</div>
             <div class="step-content">
-              <p>{{ step }}</p>
+              <h4 v-if="step.title" class="step-title">{{ step.title }}</h4>
+              <p>{{ step.description }}</p>
             </div>
           </div>
         </div>
@@ -138,6 +147,19 @@ const formatDate = (dateString) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+const formatIngredient = (ingredient) => {
+  if (!ingredient) return ''
+  const parts = []
+  if (ingredient.quantity && ingredient.quantity !== 1) {
+    parts.push(ingredient.quantity)
+  }
+  if (ingredient.unit) {
+    parts.push(ingredient.unit)
+  }
+  parts.push(ingredient.name)
+  return parts.join(' ')
 }
 </script>
 
@@ -399,6 +421,13 @@ const formatDate = (dateString) => {
 .step-content {
   flex: 1;
   padding-top: 8px;
+}
+
+.step-title {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
 }
 
 .step-content p {

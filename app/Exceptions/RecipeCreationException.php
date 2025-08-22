@@ -13,21 +13,21 @@ class RecipeCreationException extends Exception
     /**
      * Create a new recipe creation exception instance.
      *
-     * @param string $message The exception message
-     * @param int $code The exception code
-     * @param Throwable|null $previous The previous exception
+     * @param  string  $message The exception message
+     * @param  int  $code The exception code
+     * @param  Throwable|null  $previous The previous exception
      */
     public function __construct(
         string $message = 'Recipe creation failed',
         int $code = 0,
-        ?Throwable $previous = null
+        Throwable $previous = null
     ) {
         parent::__construct($message, $code, $previous);
     }
 
     /**
      * Report the exception for logging purposes.
-     * 
+     *
      * @return bool Whether the exception should be reported
      */
     public function report(): bool
@@ -40,7 +40,7 @@ class RecipeCreationException extends Exception
     /**
      * Render the exception as an HTTP response.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function render($request)
@@ -59,8 +59,6 @@ class RecipeCreationException extends Exception
 
     /**
      * Get the exception's context for logging.
-     *
-     * @return array
      */
     public function context(): array
     {

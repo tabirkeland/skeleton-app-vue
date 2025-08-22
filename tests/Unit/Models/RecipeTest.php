@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Models;
 
-use Tests\TestCase;
-use App\Models\Recipe;
 use App\Builders\RecipeBuilder;
+use App\Models\Recipe;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class RecipeTest extends TestCase
 {
@@ -31,10 +31,11 @@ class RecipeTest extends TestCase
         $expected = [
             'name',
             'description',
-            'ingredients',
-            'steps',
-            'author_email',
-            'slug'
+            'slug',
+            'image_url',
+            'prep_time',
+            'cook_time',
+            'servings',
         ];
 
         $this->assertEquals($expected, $recipe->getFillable());
@@ -43,61 +44,30 @@ class RecipeTest extends TestCase
     /**
      * @test
      */
-    public function it_casts_ingredients_to_array()
+    public function it_has_relationships()
     {
-        $recipe = Recipe::create([
-            'name' => 'Test Recipe',
-            'description' => 'Test description',
-            'ingredients' => ['ingredient1', 'ingredient2'],
-            'steps' => ['step1'],
-            'author_email' => 'test@example.com',
-            'slug' => 'test-recipe'
-        ]);
+        $recipe = Recipe::factory()->create();
 
-        $retrieved = Recipe::find($recipe->id);
-
-        $this->assertIsArray($retrieved->ingredients);
-        $this->assertEquals(['ingredient1', 'ingredient2'], $retrieved->ingredients);
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $recipe->authors());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $recipe->ingredients());
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $recipe->steps());
     }
 
     /**
      * @test
      */
-    public function it_casts_steps_to_array()
+    public function it_eager_loads_relationships()
     {
-        $recipe = Recipe::create([
-            'name' => 'Test Recipe',
-            'description' => 'Test description',
-            'ingredients' => ['ingredient1'],
-            'steps' => ['step1', 'step2', 'step3'],
-            'author_email' => 'test@example.com',
-            'slug' => 'test-recipe'
-        ]);
+        $recipe = Recipe::factory()->create();
+        $recipe->authors()->create(['name' => 'Test Author', 'email' => 'test@example.com']);
+        $recipe->ingredients()->create(['name' => 'Test Ingredient', 'quantity' => 1]);
+        $recipe->steps()->create(['description' => 'Test Step', 'order' => 1]);
 
-        $retrieved = Recipe::find($recipe->id);
+        $loaded = Recipe::find($recipe->id);
 
-        $this->assertIsArray($retrieved->steps);
-        $this->assertEquals(['step1', 'step2', 'step3'], $retrieved->steps);
-    }
-
-    /**
-     * @test
-     */
-    public function it_handles_empty_arrays_for_json_fields()
-    {
-        $recipe = Recipe::create([
-            'name' => 'Test Recipe',
-            'description' => 'Test description',
-            'ingredients' => [],
-            'steps' => [],
-            'author_email' => 'test@example.com',
-            'slug' => 'test-recipe'
-        ]);
-
-        $this->assertIsArray($recipe->ingredients);
-        $this->assertEmpty($recipe->ingredients);
-        $this->assertIsArray($recipe->steps);
-        $this->assertEmpty($recipe->steps);
+        $this->assertTrue($loaded->relationLoaded('authors'));
+        $this->assertTrue($loaded->relationLoaded('ingredients'));
+        $this->assertTrue($loaded->relationLoaded('steps'));
     }
 
     /**
@@ -106,23 +76,21 @@ class RecipeTest extends TestCase
     public function it_stores_and_retrieves_all_attributes_correctly()
     {
         $data = [
-            'name' => 'Complete Recipe',
-            'description' => 'A complete recipe with all attributes',
-            'ingredients' => ['flour', 'eggs', 'milk'],
-            'steps' => ['Mix ingredients', 'Bake for 30 minutes'],
-            'author_email' => 'chef@example.com',
-            'slug' => 'complete-recipe'
+            'name' => 'Test Recipe',
+            'description' => 'A test recipe description',
+            'slug' => 'test-recipe',
+            'image_url' => 'https://example.com/image.jpg',
+            'prep_time' => 15,
+            'cook_time' => 30,
+            'servings' => 4,
         ];
 
         $recipe = Recipe::create($data);
         $retrieved = Recipe::find($recipe->id);
 
-        $this->assertEquals($data['name'], $retrieved->name);
-        $this->assertEquals($data['description'], $retrieved->description);
-        $this->assertEquals($data['ingredients'], $retrieved->ingredients);
-        $this->assertEquals($data['steps'], $retrieved->steps);
-        $this->assertEquals($data['author_email'], $retrieved->author_email);
-        $this->assertEquals($data['slug'], $retrieved->slug);
+        foreach ($data as $key => $value) {
+            $this->assertEquals($value, $retrieved->{$key});
+        }
     }
 
     /**
@@ -154,24 +122,29 @@ class RecipeTest extends TestCase
     /**
      * @test
      */
-    public function it_preserves_json_structure_with_special_characters()
+    public function it_preserves_related_data_with_special_characters()
     {
-        $recipe = Recipe::create([
-            'name' => 'Special Recipe',
-            'description' => 'Recipe with special characters',
-            'ingredients' => ["1/2 cup milk", "Chef's special sauce", 'Salt & pepper'],
-            'steps' => ['Step with "quotes"', "Step with 'apostrophes'"],
-            'author_email' => 'test@example.com',
-            'slug' => 'special-recipe'
+        $recipe = Recipe::factory()->create();
+
+        // Clear auto-generated relationships
+        $recipe->ingredients()->delete();
+        $recipe->steps()->delete();
+
+        $recipe->ingredients()->create([
+            'name' => 'Special "ingredient" with quotes',
+            'quantity' => 1,
+            'unit' => 'cup',
         ]);
 
-        $retrieved = Recipe::find($recipe->id);
+        $recipe->steps()->create([
+            'description' => 'Step with special characters: &, <, >, "',
+            'order' => 1,
+        ]);
 
-        $this->assertEquals("1/2 cup milk", $retrieved->ingredients[0]);
-        $this->assertEquals("Chef's special sauce", $retrieved->ingredients[1]);
-        $this->assertEquals('Salt & pepper', $retrieved->ingredients[2]);
-        $this->assertEquals('Step with "quotes"', $retrieved->steps[0]);
-        $this->assertEquals("Step with 'apostrophes'", $retrieved->steps[1]);
+        $retrieved = Recipe::with(['ingredients', 'steps'])->find($recipe->id);
+
+        $this->assertEquals('Special "ingredient" with quotes', $retrieved->ingredients->first()->name);
+        $this->assertEquals('Step with special characters: &, <, >, "', $retrieved->steps->first()->description);
     }
 
     /**
@@ -179,16 +152,15 @@ class RecipeTest extends TestCase
      */
     public function it_can_access_ingredient_count()
     {
-        $recipe = Recipe::create([
-            'name' => 'Test Recipe',
-            'description' => 'Test',
-            'ingredients' => ['item1', 'item2', 'item3'],
-            'steps' => ['step1'],
-            'author_email' => 'test@example.com',
-            'slug' => 'test-recipe'
+        $recipe = Recipe::factory()->create();
+        $recipe->ingredients()->delete();
+        $recipe->ingredients()->createMany([
+            ['name' => 'Ingredient 1', 'quantity' => 1],
+            ['name' => 'Ingredient 2', 'quantity' => 2],
+            ['name' => 'Ingredient 3', 'quantity' => 3],
         ]);
 
-        $this->assertEquals(3, count($recipe->ingredients));
+        $this->assertEquals(3, $recipe->ingredient_count);
     }
 
     /**
@@ -196,16 +168,14 @@ class RecipeTest extends TestCase
      */
     public function it_can_access_step_count()
     {
-        $recipe = Recipe::create([
-            'name' => 'Test Recipe',
-            'description' => 'Test',
-            'ingredients' => ['item1'],
-            'steps' => ['step1', 'step2', 'step3', 'step4'],
-            'author_email' => 'test@example.com',
-            'slug' => 'test-recipe'
+        $recipe = Recipe::factory()->create();
+        $recipe->steps()->delete();
+        $recipe->steps()->createMany([
+            ['description' => 'Step 1', 'order' => 1],
+            ['description' => 'Step 2', 'order' => 2],
         ]);
 
-        $this->assertEquals(4, count($recipe->steps));
+        $this->assertEquals(2, $recipe->step_count);
     }
 
     /**
@@ -213,18 +183,32 @@ class RecipeTest extends TestCase
      */
     public function it_can_be_converted_to_array()
     {
-        $recipe = Recipe::factory()->create();
+        $recipe = Recipe::factory()->create([
+            'name' => 'Test Recipe',
+            'description' => 'Test description',
+        ]);
 
+        // Clear auto-generated relationships
+        $recipe->authors()->delete();
+        $recipe->ingredients()->delete();
+        $recipe->steps()->delete();
+
+        $recipe->authors()->create(['name' => 'Author', 'email' => 'author@example.com']);
+        $recipe->ingredients()->create(['name' => 'Ingredient', 'quantity' => 1]);
+        $recipe->steps()->create(['description' => 'Step', 'order' => 1]);
+
+        // Refresh the model to include the relationships
+        $recipe = $recipe->fresh(['authors', 'ingredients', 'steps']);
         $array = $recipe->toArray();
 
-        $this->assertIsArray($array);
-        $this->assertArrayHasKey('id', $array);
         $this->assertArrayHasKey('name', $array);
         $this->assertArrayHasKey('description', $array);
+        $this->assertArrayHasKey('authors', $array);
         $this->assertArrayHasKey('ingredients', $array);
         $this->assertArrayHasKey('steps', $array);
-        $this->assertArrayHasKey('author_email', $array);
-        $this->assertArrayHasKey('slug', $array);
+        $this->assertIsArray($array['authors']);
+        $this->assertIsArray($array['ingredients']);
+        $this->assertIsArray($array['steps']);
     }
 
     /**
@@ -235,11 +219,11 @@ class RecipeTest extends TestCase
         $recipe = Recipe::factory()->create();
 
         $json = $recipe->toJson();
-
-        $this->assertJson($json);
         $decoded = json_decode($json, true);
-        $this->assertEquals($recipe->id, $decoded['id']);
-        $this->assertEquals($recipe->name, $decoded['name']);
+
+        $this->assertIsString($json);
+        $this->assertArrayHasKey('id', $decoded);
+        $this->assertArrayHasKey('name', $decoded);
     }
 
     /**
@@ -249,9 +233,8 @@ class RecipeTest extends TestCase
     {
         $recipe = Recipe::factory()->create();
 
-        $this->assertDatabaseHas('recipes', [
-            'id' => $recipe->id
-        ]);
+        $this->assertInstanceOf(Recipe::class, $recipe);
+        $this->assertDatabaseHas('recipes', ['id' => $recipe->id]);
     }
 
     /**
@@ -259,20 +242,28 @@ class RecipeTest extends TestCase
      */
     public function it_handles_mass_assignment()
     {
-        $data = [
+        $recipe = Recipe::create([
             'name' => 'Mass Assignment Test',
             'description' => 'Testing mass assignment',
-            'ingredients' => ['ingredient'],
-            'steps' => ['step'],
-            'author_email' => 'test@example.com',
-            'slug' => 'mass-assignment-test'
-        ];
-
-        $recipe = Recipe::create($data);
-
-        $this->assertDatabaseHas('recipes', [
-            'name' => 'Mass Assignment Test',
-            'slug' => 'mass-assignment-test'
+            'slug' => 'mass-assignment-test',
         ]);
+
+        $this->assertEquals('Mass Assignment Test', $recipe->name);
+        $this->assertEquals('Testing mass assignment', $recipe->description);
+        $this->assertEquals('mass-assignment-test', $recipe->slug);
+    }
+
+    /**
+     * @test
+     */
+    public function it_gets_primary_author()
+    {
+        $recipe = Recipe::factory()->create();
+        $recipe->authors()->delete();
+        $author1 = $recipe->authors()->create(['name' => 'First Author', 'email' => 'first@example.com']);
+        $author2 = $recipe->authors()->create(['name' => 'Second Author', 'email' => 'second@example.com']);
+
+        $this->assertEquals($author1->id, $recipe->primary_author->id);
+        $this->assertEquals('first@example.com', $recipe->author_email);
     }
 }

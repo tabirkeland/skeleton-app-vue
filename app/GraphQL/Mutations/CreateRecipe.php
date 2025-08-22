@@ -23,13 +23,9 @@ class CreateRecipe
         $input = $args['input'];
 
         try {
-            return $this->createAction->execute([
-                'name' => $input['name'],
-                'description' => $input['description'],
-                'ingredients' => $input['ingredients'],
-                'steps' => $input['steps'],
-                'author_email' => $input['author_email'],
-            ]);
+            // Pass the entire input array to the action
+            // The action will handle the new relational structure
+            return $this->createAction->execute($input);
         } catch (ValidationException $e) {
             throw new \GraphQL\Error\Error(
                 'Validation failed: '.implode(', ', $e->errors()['general'] ?? ['Invalid input'])

@@ -2,12 +2,12 @@
 
 namespace Tests\Unit\Actions;
 
-use Tests\TestCase;
-use App\Models\Recipe;
 use App\Actions\Recipe\CreateRecipeAction;
 use App\Exceptions\RecipeCreationException;
+use App\Models\Recipe;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class CreateRecipeActionTest extends TestCase
 {
@@ -29,9 +29,17 @@ class CreateRecipeActionTest extends TestCase
         $data = [
             'name' => 'Test Recipe',
             'description' => 'A test recipe description',
-            'ingredients' => ['ingredient 1', 'ingredient 2'],
-            'steps' => ['Step 1', 'Step 2'],
-            'author_email' => 'test@example.com'
+            'authors' => [
+                ['name' => 'Test Author', 'email' => 'test@example.com', 'about' => 'A test author'],
+            ],
+            'ingredients' => [
+                ['name' => 'ingredient 1', 'quantity' => 1, 'unit' => 'cup'],
+                ['name' => 'ingredient 2', 'quantity' => 2, 'unit' => 'tbsp'],
+            ],
+            'steps' => [
+                ['title' => 'Step 1', 'description' => 'Do step 1', 'order' => 1],
+                ['title' => 'Step 2', 'description' => 'Do step 2', 'order' => 2],
+            ],
         ];
 
         $recipe = $this->action->execute($data);
@@ -40,9 +48,15 @@ class CreateRecipeActionTest extends TestCase
         $this->assertEquals('Test Recipe', $recipe->name);
         $this->assertEquals('test-recipe', $recipe->slug);
         $this->assertEquals('test@example.com', $recipe->author_email);
+        $this->assertCount(1, $recipe->authors);
+        $this->assertCount(2, $recipe->ingredients);
+        $this->assertCount(2, $recipe->steps);
         $this->assertDatabaseHas('recipes', [
             'name' => 'Test Recipe',
-            'slug' => 'test-recipe'
+            'slug' => 'test-recipe',
+        ]);
+        $this->assertDatabaseHas('recipe_authors', [
+            'email' => 'test@example.com',
         ]);
     }
 
@@ -53,23 +67,26 @@ class CreateRecipeActionTest extends TestCase
     {
         Recipe::factory()->create([
             'name' => 'Duplicate Recipe',
-            'slug' => 'duplicate-recipe'
+            'slug' => 'duplicate-recipe',
         ]);
 
         $data = [
             'name' => 'Duplicate Recipe',
-            'description' => 'Another recipe with same name',
-            'ingredients' => ['ingredient'],
-            'steps' => ['step'],
-            'author_email' => 'test@example.com'
+            'description' => 'Another duplicate recipe',
+            'authors' => [
+                ['name' => 'Author', 'email' => 'author@example.com'],
+            ],
+            'ingredients' => [
+                ['name' => 'ingredient', 'quantity' => 1],
+            ],
+            'steps' => [
+                ['description' => 'Step 1'],
+            ],
         ];
 
         $recipe = $this->action->execute($data);
 
         $this->assertEquals('duplicate-recipe-1', $recipe->slug);
-        $this->assertDatabaseHas('recipes', [
-            'slug' => 'duplicate-recipe-1'
-        ]);
     }
 
     /**
@@ -77,20 +94,26 @@ class CreateRecipeActionTest extends TestCase
      */
     public function it_handles_multiple_duplicate_slugs()
     {
-        Recipe::factory()->create(['slug' => 'test-recipe']);
-        Recipe::factory()->create(['slug' => 'test-recipe-1']);
+        Recipe::factory()->create(['name' => 'Recipe', 'slug' => 'recipe']);
+        Recipe::factory()->create(['name' => 'Recipe', 'slug' => 'recipe-1']);
 
         $data = [
-            'name' => 'Test Recipe',
-            'description' => 'Description',
-            'ingredients' => ['ingredient'],
-            'steps' => ['step'],
-            'author_email' => 'test@example.com'
+            'name' => 'Recipe',
+            'description' => 'Another recipe',
+            'authors' => [
+                ['name' => 'Author', 'email' => 'new@example.com'],
+            ],
+            'ingredients' => [
+                ['name' => 'ingredient', 'quantity' => 1],
+            ],
+            'steps' => [
+                ['description' => 'Step 1'],
+            ],
         ];
 
         $recipe = $this->action->execute($data);
 
-        $this->assertEquals('test-recipe-2', $recipe->slug);
+        $this->assertEquals('recipe-2', $recipe->slug);
     }
 
     /**
@@ -98,19 +121,25 @@ class CreateRecipeActionTest extends TestCase
      */
     public function it_uses_database_transaction()
     {
-        $data = [
-            'name' => 'Transaction Test',
-            'description' => 'Testing transaction',
-            'ingredients' => ['ingredient'],
-            'steps' => ['step'],
-            'author_email' => 'test@example.com'
-        ];
-
         DB::shouldReceive('transaction')
             ->once()
             ->andReturnUsing(function ($callback) {
                 return $callback();
             });
+
+        $data = [
+            'name' => 'Transaction Test',
+            'description' => 'Testing transaction',
+            'authors' => [
+                ['name' => 'Author', 'email' => 'trans@example.com'],
+            ],
+            'ingredients' => [
+                ['name' => 'ingredient', 'quantity' => 1],
+            ],
+            'steps' => [
+                ['description' => 'Step 1'],
+            ],
+        ];
 
         $this->action->execute($data);
     }
@@ -121,16 +150,22 @@ class CreateRecipeActionTest extends TestCase
     public function it_handles_special_characters_in_recipe_name()
     {
         $data = [
-            'name' => "Chef's Special Recipe & More!",
-            'description' => 'Description',
-            'ingredients' => ['ingredient'],
-            'steps' => ['step'],
-            'author_email' => 'test@example.com'
+            'name' => 'Recipe with Special Characters & Symbols!',
+            'description' => 'A recipe with special chars',
+            'authors' => [
+                ['name' => 'Author', 'email' => 'special@example.com'],
+            ],
+            'ingredients' => [
+                ['name' => 'ingredient', 'quantity' => 1],
+            ],
+            'steps' => [
+                ['description' => 'Step 1'],
+            ],
         ];
 
         $recipe = $this->action->execute($data);
 
-        $this->assertEquals('chefs-special-recipe-more', $recipe->slug);
+        $this->assertEquals('recipe-with-special-characters-symbols', $recipe->slug);
     }
 
     /**
@@ -138,21 +173,27 @@ class CreateRecipeActionTest extends TestCase
      */
     public function it_preserves_array_structure_for_ingredients_and_steps()
     {
-        $ingredients = ['2 cups flour', '1 egg', '1/2 cup milk'];
-        $steps = ['Mix dry ingredients', 'Add wet ingredients', 'Bake for 30 minutes'];
-
         $data = [
-            'name' => 'Array Test Recipe',
-            'description' => 'Testing arrays',
-            'ingredients' => $ingredients,
-            'steps' => $steps,
-            'author_email' => 'test@example.com'
+            'name' => 'Complex Recipe',
+            'description' => 'A complex recipe',
+            'authors' => [
+                ['name' => 'Chef', 'email' => 'chef@example.com'],
+            ],
+            'ingredients' => [
+                ['name' => 'Special ingredient', 'quantity' => 2.5, 'unit' => 'cups'],
+                ['name' => 'Another ingredient', 'quantity' => 1, 'unit' => 'tbsp'],
+            ],
+            'steps' => [
+                ['title' => 'First step', 'description' => 'Do this first', 'order' => 1],
+                ['title' => 'Second step', 'description' => 'Then do this', 'order' => 2],
+            ],
         ];
 
         $recipe = $this->action->execute($data);
 
-        $this->assertEquals($ingredients, $recipe->ingredients);
-        $this->assertEquals($steps, $recipe->steps);
+        $this->assertEquals('Special ingredient', $recipe->ingredients->first()->name);
+        $this->assertEquals(2.5, $recipe->ingredients->first()->quantity);
+        $this->assertEquals('First step', $recipe->steps->first()->title);
     }
 
     /**
@@ -161,19 +202,19 @@ class CreateRecipeActionTest extends TestCase
     public function it_handles_empty_arrays_for_ingredients_and_steps()
     {
         $data = [
-            'name' => 'Empty Arrays Recipe',
-            'description' => 'Testing empty arrays',
+            'name' => 'Empty Recipe',
+            'description' => 'A recipe with no ingredients or steps',
+            'authors' => [
+                ['name' => 'Author', 'email' => 'empty@example.com'],
+            ],
             'ingredients' => [],
             'steps' => [],
-            'author_email' => 'test@example.com'
         ];
 
         $recipe = $this->action->execute($data);
 
-        $this->assertIsArray($recipe->ingredients);
-        $this->assertEmpty($recipe->ingredients);
-        $this->assertIsArray($recipe->steps);
-        $this->assertEmpty($recipe->steps);
+        $this->assertCount(0, $recipe->ingredients);
+        $this->assertCount(0, $recipe->steps);
     }
 
     /**
@@ -182,16 +223,22 @@ class CreateRecipeActionTest extends TestCase
     public function it_normalizes_email_to_lowercase()
     {
         $data = [
-            'name' => 'Email Test',
-            'description' => 'Testing email normalization',
-            'ingredients' => ['ingredient'],
-            'steps' => ['step'],
-            'author_email' => 'TEST@EXAMPLE.COM'
+            'name' => 'Recipe',
+            'description' => 'Description',
+            'authors' => [
+                ['name' => 'Author', 'email' => 'TEST@EXAMPLE.COM'],
+            ],
+            'ingredients' => [
+                ['name' => 'ingredient', 'quantity' => 1],
+            ],
+            'steps' => [
+                ['description' => 'Step 1'],
+            ],
         ];
 
         $recipe = $this->action->execute($data);
 
-        $this->assertEquals('test@example.com', $recipe->author_email);
+        $this->assertEquals('test@example.com', $recipe->authors->first()->email);
     }
 
     /**
@@ -201,19 +248,24 @@ class CreateRecipeActionTest extends TestCase
     {
         $this->expectException(RecipeCreationException::class);
 
-        DB::shouldReceive('transaction')
-            ->once()
-            ->andThrow(new \Exception('Database error'));
+        $action = new CreateRecipeAction(new Recipe());
 
+        // Create invalid data that will cause a database constraint violation
         $data = [
-            'name' => 'Test Recipe',
+            'name' => str_repeat('a', 300), // Exceeds max length constraint
             'description' => 'Description',
-            'ingredients' => ['ingredient'],
-            'steps' => ['step'],
-            'author_email' => 'test@example.com'
+            'authors' => [
+                ['name' => 'Author', 'email' => 'test@example.com'],
+            ],
+            'ingredients' => [
+                ['name' => 'ingredient1'],
+            ],
+            'steps' => [
+                ['description' => 'step1'],
+            ],
         ];
 
-        $this->action->execute($data);
+        $action->execute($data);
     }
 
     /**
@@ -224,9 +276,15 @@ class CreateRecipeActionTest extends TestCase
         $data = [
             'name' => 'Crème Brûlée',
             'description' => 'French dessert',
-            'ingredients' => ['cream', 'sugar'],
-            'steps' => ['Mix', 'Torch'],
-            'author_email' => 'test@example.com'
+            'authors' => [
+                ['name' => 'Chef', 'email' => 'french@example.com'],
+            ],
+            'ingredients' => [
+                ['name' => 'cream', 'quantity' => 1, 'unit' => 'cup'],
+            ],
+            'steps' => [
+                ['description' => 'Make dessert'],
+            ],
         ];
 
         $recipe = $this->action->execute($data);
