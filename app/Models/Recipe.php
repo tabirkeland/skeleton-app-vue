@@ -21,10 +21,24 @@ class Recipe extends Model
         'name',
         'description',
         'slug',
+        'category',
         'image_url',
         'prep_time',
         'cook_time',
         'servings',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'prep_time' => 'integer',
+        'cook_time' => 'integer',
+        'servings' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
@@ -77,19 +91,6 @@ class Recipe extends Model
 
         return $query->exists();
     }
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'prep_time' => 'integer',
-        'cook_time' => 'integer',
-        'servings' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
 
     /**
      * The relationships that should always be loaded.

@@ -146,7 +146,7 @@ class SearchRecipesAction implements Action
         $query = $this->recipe->query();
 
         // Apply search filters using the RecipeBuilder's search method
-        if (! empty($filters)) {
+        if (!empty($filters)) {
             // Handle multiple ingredients separately
             if (isset($filters['ingredients'])) {
                 $ingredients = $filters['ingredients'];
@@ -174,7 +174,7 @@ class SearchRecipesAction implements Action
             }
 
             // Apply other filters
-            if (! empty($filters)) {
+            if (!empty($filters)) {
                 $query = $query->search($filters);
             }
         }

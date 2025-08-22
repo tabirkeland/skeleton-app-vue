@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description');
             $table->string('slug')->unique();
+            $table->string('category')->nullable(); // Optional: for recipe categories
             $table->string('image_url')->nullable(); // Optional: for recipe images
             $table->integer('prep_time')->nullable(); // Optional: in minutes
             $table->integer('cook_time')->nullable(); // Optional: in minutes

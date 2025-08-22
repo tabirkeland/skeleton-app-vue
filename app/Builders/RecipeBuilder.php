@@ -98,16 +98,16 @@ class RecipeBuilder extends Builder
     public function search(array $filters): self
     {
         return $this->when(
-            isset($filters['author_email']),
+            !empty($filters['author_email']),
             fn ($query) => $query->byAuthor($filters['author_email'])
         )->when(
-            isset($filters['author_name']),
+            !empty($filters['author_name']),
             fn ($query) => $query->byAuthorName($filters['author_name'])
         )->when(
-            isset($filters['keyword']),
+            !empty($filters['keyword']),
             fn ($query) => $query->searchKeyword($filters['keyword'])
         )->when(
-            isset($filters['ingredient']),
+            !empty($filters['ingredient']),
             fn ($query) => $query->withIngredient($filters['ingredient'])
         );
     }
