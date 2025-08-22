@@ -19,8 +19,7 @@ class GenerateRecipesCommand extends Command
                             {--min-steps=3 : Minimum number of steps per recipe}
                             {--max-steps=10 : Maximum number of steps per recipe}
                             {--min-authors=1 : Minimum number of authors per recipe}
-                            {--max-authors=2 : Maximum number of authors per recipe}
-                            {--image-source=picsum : Image source (picsum, loremflickr)}';
+                            {--max-authors=2 : Maximum number of authors per recipe}';
 
     /**
      * The console command description.
@@ -51,7 +50,6 @@ class GenerateRecipesCommand extends Command
             'max_steps' => (int) $this->option('max-steps'),
             'min_authors' => (int) $this->option('min-authors'),
             'max_authors' => (int) $this->option('max-authors'),
-            'image_source' => $this->option('image-source'),
             'progress_callback' => function ($current, $total) use ($progressBar) {
                 $progressBar->advance();
             },

@@ -24,9 +24,9 @@ class GenerateRecipesCommandTest extends TestCase
 
         $this->assertDatabaseCount('recipes', 3);
         $this->assertGreaterThanOrEqual(3, \DB::table('recipe_authors')->count());
-        // Verify at least one recipe has a picsum image URL
+        // Verify at least one recipe has an image URL
         $recipe = Recipe::first();
-        $this->assertStringContainsString('picsum.photos', $recipe->image_url);
+        $this->assertNotEmpty($recipe->image_url);
         // Verify category is populated
         $this->assertNotNull($recipe->category);
         $this->assertNotEmpty($recipe->category);
@@ -95,33 +95,6 @@ class GenerateRecipesCommandTest extends TestCase
 
         $this->assertGreaterThanOrEqual(2, $authorCount);
         $this->assertLessThanOrEqual(3, $authorCount);
-    }
-
-    /**
-     * @test
-     */
-    public function it_uses_picsum_image_source_by_default()
-    {
-        $this->artisan('recipes:generate', ['--count' => 1])
-            ->assertExitCode(0);
-
-        $recipe = Recipe::first();
-        $this->assertStringContainsString('picsum.photos', $recipe->image_url);
-    }
-
-    /**
-     * @test
-     */
-    public function it_uses_loremflickr_when_specified()
-    {
-        $this->artisan('recipes:generate', [
-            '--count' => 1,
-            '--image-source' => 'loremflickr',
-        ])->assertExitCode(0);
-
-        $recipe = Recipe::first();
-        $this->assertStringContainsString('loremflickr.com', $recipe->image_url);
-        $this->assertStringContainsString('food,recipe,cooking', $recipe->image_url);
     }
 
     /**
@@ -345,21 +318,17 @@ class GenerateRecipesCommandTest extends TestCase
     {
         $this->artisan('recipes:generate', [
             '--count' => 2,
-            '--image-source' => 'picsum',
-        ])->assertExitCode(0);
-
-        $this->artisan('recipes:generate', [
-            '--count' => 2,
-            '--image-source' => 'loremflickr',
         ])->assertExitCode(0);
 
         $recipes = Recipe::all();
 
         foreach ($recipes as $recipe) {
             $this->assertNotEmpty($recipe->image_url);
+            // In test environment, we use placeholder URLs
             $this->assertTrue(
-                str_contains($recipe->image_url, 'picsum.photos') ||
-                str_contains($recipe->image_url, 'loremflickr.com'),
+                str_contains($recipe->image_url, 'placehold.co') ||
+                str_contains($recipe->image_url, 'pexels.com') ||
+                str_contains($recipe->image_url, 'loremflickr.com'), // Temporary placeholder from factory
                 "Image URL should be from a valid source: {$recipe->image_url}"
             );
         }

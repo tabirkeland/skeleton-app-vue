@@ -17,8 +17,8 @@
         </h2>
         <p class="text-red-700 mb-6">{{ error.message }}</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <button 
-            @click="refetch" 
+          <button
+            @click="refetch"
             class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all duration-200 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
           >
             Try Again
@@ -34,22 +34,22 @@
            :style="recipe.image_url ? '' : 'background: linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #0369a1 100%)'">
         <!-- Background Image with Enhanced Overlay -->
         <div v-if="recipe.image_url" class="absolute inset-0">
-          <img 
-            :src="recipe.image_url" 
+          <img
+            :src="recipe.image_url"
             :alt="recipe.name"
             class="w-full h-full object-cover"
             @error="handleImageError"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20"></div>
         </div>
-        
+
         <!-- Fallback Gradient Overlay for Better Depth -->
         <div v-else class="absolute inset-0 bg-black/20"></div>
-        
+
         <!-- Content -->
         <div class="relative p-8 md:p-12 backdrop-blur-sm">
           <h1 class="text-3xl md:text-5xl font-bold mb-4 drop-shadow-lg">{{ recipe.name }}</h1>
-          
+
           <!-- Stats moved here -->
           <div class="flex gap-6 mb-6">
             <div class="flex items-center gap-2">
@@ -61,42 +61,35 @@
               <span class="text-lg font-semibold">{{ recipe.step_count }} Steps</span>
             </div>
           </div>
-        
+
         <!-- Recipe Meta -->
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div v-if="recipe.primary_author" class="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-lg p-3 transition-all duration-200 hover:bg-white/20">
-            <ChefHat :size="20" class="text-golden-300" />
-            <div>
-              <div class="text-sm opacity-90">Chef</div>
-              <div class="font-semibold">{{ recipe.primary_author.name }}</div>
-            </div>
-          </div>
-          <div v-if="recipe.prep_time" class="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-lg p-3 transition-all duration-200 hover:bg-white/20">
-            <Clock :size="20" class="text-golden-300" />
-            <div>
-              <div class="text-sm opacity-90">Prep</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div v-if="recipe.prep_time" class="bg-white/10 backdrop-blur-md rounded-lg p-4 transition-all duration-200 hover:bg-white/20">
+            <div class="flex flex-col">
+              <Clock :size="20" class="text-golden-300 mb-2" />
+              <div class="text-sm opacity-90 mb-1">Prep</div>
               <div class="font-semibold">{{ recipe.prep_time }}m</div>
             </div>
           </div>
-          <div v-if="recipe.cook_time" class="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-lg p-3 transition-all duration-200 hover:bg-white/20">
-            <Flame :size="20" class="text-salmon-400" />
-            <div>
-              <div class="text-sm opacity-90">Cook</div>
+          <div v-if="recipe.cook_time" class="bg-white/10 backdrop-blur-md rounded-lg p-4 transition-all duration-200 hover:bg-white/20">
+            <div class="flex flex-col">
+              <Flame :size="20" class="text-salmon-400 mb-2" />
+              <div class="text-sm opacity-90 mb-1">Cook</div>
               <div class="font-semibold">{{ recipe.cook_time }}m</div>
             </div>
           </div>
-          <div v-if="recipe.servings" class="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-lg p-3 transition-all duration-200 hover:bg-white/20">
-            <UtensilsCrossed :size="20" class="text-golden-300" />
-            <div>
-              <div class="text-sm opacity-90">Servings</div>
+          <div v-if="recipe.servings" class="bg-white/10 backdrop-blur-md rounded-lg p-4 transition-all duration-200 hover:bg-white/20">
+            <div class="flex flex-col">
+              <UtensilsCrossed :size="20" class="text-golden-300 mb-2" />
+              <div class="text-sm opacity-90 mb-1">Servings</div>
               <div class="font-semibold">{{ recipe.servings }}</div>
             </div>
           </div>
-          <div class="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-lg p-3 transition-all duration-200 hover:bg-white/20">
-            <Calendar :size="20" class="text-golden-300" />
-            <div>
-              <div class="text-sm opacity-90">Created</div>
-              <div class="font-semibold">{{ formatDate(recipe.created_at) }}</div>
+          <div class="bg-white/10 backdrop-blur-md rounded-lg p-4 transition-all duration-200 hover:bg-white/20">
+            <div class="flex flex-col">
+              <Calendar :size="20" class="text-golden-300 mb-2" />
+              <div class="text-sm opacity-90 mb-1">Created</div>
+              <div class="font-semibold">{{ formatDateOnly(recipe.created_at) }}</div>
             </div>
           </div>
         </div>
@@ -136,9 +129,9 @@
         <!-- Ingredients -->
         <div class="relative bg-gray-50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
              style="background: linear-gradient(135deg, rgba(249,250,251,0.98) 0%, rgba(243,244,246,0.98) 100%)">
-          <button 
+          <button
             @click="toggleIngredients"
-            class="w-full p-6 md:p-8 pb-4 md:pb-4 hover:bg-white/40 transition-all duration-200 focus:outline-none focus:bg-white/40"
+            class="w-full p-6 md:p-8 hover:bg-white/40 transition-all duration-200 focus:outline-none focus:bg-white/40"
           >
             <div class="flex items-center justify-between">
               <h2 class="text-2xl font-bold text-gray-900 flex items-center">
@@ -163,9 +156,9 @@
             leave-to-class="opacity-0 max-h-0"
           >
             <div v-show="isIngredientsOpen" class="px-6 md:px-8 pb-6 md:pb-8">
-              <div class="space-y-3 pt-2">
-                <div 
-                  v-for="(ingredient, index) in recipe.ingredients" 
+              <div class="space-y-3">
+                <div
+                  v-for="(ingredient, index) in recipe.ingredients"
                   :key="ingredient.id || index"
                   class="flex items-center space-x-4 p-4 bg-white/60 hover:bg-golden-50 rounded-lg transition-all duration-200 group border border-transparent hover:border-golden-200 hover:shadow-md"
                 >
@@ -182,9 +175,9 @@
         <!-- Instructions -->
         <div class="relative bg-gray-50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 mb-12 overflow-hidden"
              style="background: linear-gradient(135deg, rgba(249,250,251,0.98) 0%, rgba(243,244,246,0.98) 100%)">
-          <button 
+          <button
             @click="toggleInstructions"
-            class="w-full p-6 md:p-8 pb-4 md:pb-4 hover:bg-white/40 transition-all duration-200 focus:outline-none focus:bg-white/40"
+            class="w-full p-6 md:p-8 hover:bg-white/40 transition-all duration-200 focus:outline-none focus:bg-white/40"
           >
             <div class="flex items-center justify-between">
               <h2 class="text-2xl font-bold text-gray-900 flex items-center">
@@ -209,9 +202,9 @@
             leave-to-class="opacity-0 max-h-0"
           >
             <div v-show="isInstructionsOpen" class="px-6 md:px-8 pb-6 md:pb-8">
-              <div class="space-y-6 pt-2">
-                <div 
-                  v-for="step in recipe.steps" 
+              <div class="space-y-6">
+                <div
+                  v-for="step in recipe.steps"
                   :key="step.id"
                   class="flex space-x-6 p-4 rounded-lg hover:bg-white/60 transition-all duration-200 group"
                 >
@@ -305,6 +298,15 @@ const formatDate = (dateString) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
+  })
+}
+
+const formatDateOnly = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   })
 }
 

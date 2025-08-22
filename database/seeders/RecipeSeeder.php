@@ -12,7 +12,7 @@ class RecipeSeeder extends Seeder
      */
     public function run(): void
     {
-        $generateRecipeAction = app(GenerateRecipeAction::class);
+        $action = app(GenerateRecipeAction::class);
 
         $recipes = [
             [
@@ -22,7 +22,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 15,
                 'cook_time' => 10,
                 'servings' => 24,
-                'image_url' => 'https://loremflickr.com/640/480/cookies,chocolate,dessert',
                 'authors' => [
                     ['name' => 'Sarah Baker', 'email' => 'baker@sweetsmiles.com', 'about' => 'Professional baker with 10 years experience'],
                 ],
@@ -56,7 +55,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 20,
                 'cook_time' => 15,
                 'servings' => 4,
-                'image_url' => 'https://loremflickr.com/640/480/pizza,dough,italian',
                 'authors' => [
                     ['name' => 'Mario Rossi', 'email' => 'chef@pizzapalace.com', 'about' => 'Italian chef specializing in traditional pizzas'],
                 ],
@@ -86,7 +84,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 30,
                 'cook_time' => 120,
                 'servings' => 6,
-                'image_url' => 'https://loremflickr.com/640/480/stew,beef,comfort',
                 'authors' => [
                     ['name' => 'James Thompson', 'email' => 'chef@heartyhome.com', 'about' => 'Comfort food specialist'],
                 ],
@@ -124,7 +121,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 30,
                 'cook_time' => 60,
                 'servings' => 12,
-                'image_url' => 'https://loremflickr.com/640/480/cheesecake,dessert,vanilla',
                 'authors' => [
                     ['name' => 'Emily Chen', 'email' => 'pastry@sweetdreams.com', 'about' => 'Pastry chef specializing in desserts'],
                 ],
@@ -159,7 +155,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 20,
                 'cook_time' => 30,
                 'servings' => 4,
-                'image_url' => 'https://loremflickr.com/640/480/curry,thai,asian',
                 'authors' => [
                     ['name' => 'Somchai Prasert', 'email' => 'chef@thaispice.com', 'about' => 'Thai cuisine expert'],
                 ],
@@ -196,7 +191,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 10,
                 'cook_time' => 14,
                 'servings' => 4,
-                'image_url' => 'https://loremflickr.com/640/480/chocolate,cake,dessert',
                 'authors' => [
                     ['name' => 'Pierre Dubois', 'email' => 'pastry@chocohaven.com', 'about' => 'French pastry chef'],
                 ],
@@ -231,7 +225,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 15,
                 'cook_time' => 15,
                 'servings' => 6,
-                'image_url' => 'https://loremflickr.com/640/480/salad,quinoa,mediterranean',
                 'authors' => [
                     ['name' => 'Maria Papadopoulos', 'email' => 'healthy@medkitchen.com', 'about' => 'Mediterranean cuisine specialist'],
                 ],
@@ -270,7 +263,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 15,
                 'cook_time' => 90,
                 'servings' => 6,
-                'image_url' => 'https://loremflickr.com/640/480/soup,french,onion',
                 'authors' => [
                     ['name' => 'Jacques Martin', 'email' => 'chef@frenchbistro.com', 'about' => 'French cuisine chef'],
                 ],
@@ -308,7 +300,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 10,
                 'cook_time' => 65,
                 'servings' => 8,
-                'image_url' => 'https://loremflickr.com/640/480/bread,banana,breakfast',
                 'authors' => [
                     ['name' => 'Betty Johnson', 'email' => 'baker@homecomfort.com', 'about' => 'Home baking enthusiast'],
                 ],
@@ -344,7 +335,6 @@ class RecipeSeeder extends Seeder
                 'prep_time' => 15,
                 'cook_time' => 25,
                 'servings' => 4,
-                'image_url' => 'https://loremflickr.com/640/480/pasta,alfredo,italian',
                 'authors' => [
                     ['name' => 'Antonio Verdi', 'email' => 'chef@italianclassic.com', 'about' => 'Italian pasta specialist'],
                 ],
@@ -378,7 +368,7 @@ class RecipeSeeder extends Seeder
 
         // Use the GenerateRecipeAction to create each recipe
         foreach ($recipes as $recipeData) {
-            $generateRecipeAction->execute([
+            $action->execute([
                 'data' => $recipeData,
                 'with_relationships' => true,
             ]);

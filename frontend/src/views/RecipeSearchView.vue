@@ -25,7 +25,7 @@
             <p class="text-sm text-gray-600">Searching recipes...</p>
           </div>
         </div>
-        
+
         <!-- Keyword Search (Always Visible) -->
         <div class="relative space-y-2 mb-4">
           <label for="keyword" class="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -77,7 +77,7 @@
               </span>
             </button>
           </div>
-          
+
           <!-- Filter Dropdown Menu -->
           <div v-if="showFilterMenu" class="absolute right-0 top-16 w-56 bg-white rounded-lg shadow-xl border border-gray-300 z-50 transition-all duration-200">
             <div class="py-2">
@@ -112,8 +112,8 @@
         <div v-if="hasActiveFilters" class="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-2">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-medium text-gray-700">Active Filters</h3>
-            <button 
-              @click="clearSearch" 
+            <button
+              @click="clearSearch"
               class="text-sm text-salmon-600 hover:text-salmon-700 transition-colors"
             >
               Clear all
@@ -168,7 +168,7 @@
           @add="addIngredient"
           @cancel="cancelIngredientInput"
         />
-        
+
         <FilterInput
           v-model="tempAuthor"
           :visible="showAuthorInput"
@@ -212,9 +212,20 @@
 
     <!-- Search Results -->
     <div v-if="recipes.length" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
-      <!-- Results Count Display -->
-      <div v-if="searchExecuted" class="mb-6">
+      <!-- Results Count Display and Pagination -->
+      <div v-if="searchExecuted" class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <p class="text-lg text-driftwood-800" v-html="formattedResultsHtml"></p>
+
+        <!-- Pagination Controls -->
+        <PaginationControls
+          v-if="totalRecipes > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :per-page="searchParams.perPage"
+          :disabled="loading"
+          @page-change="goToPage"
+          @per-page-change="updatePerPage"
+        />
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -225,22 +236,16 @@
         />
       </div>
 
-      <!-- Load More Button -->
-      <div v-if="hasNextPage" class="text-center">
-        <button
-          @click="loadMore"
-          :disabled="loadingMore"
-          class="px-6 py-3 bg-alaskan-500 hover:bg-alaskan-600 disabled:bg-driftwood-400 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2 disabled:cursor-not-allowed"
-        >
-          <span v-if="loadingMore" class="flex items-center gap-2">
-            <Loader2 :size="16" class="animate-spin" />
-            Loading...
-          </span>
-          <span v-else class="flex items-center gap-2">
-            <FileText :size="16" />
-            Load More Recipes
-          </span>
-        </button>
+      <!-- Bottom Pagination -->
+      <div v-if="totalRecipes > 0" class="flex justify-center">
+        <PaginationControls
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :per-page="searchParams.perPage"
+          :disabled="loading"
+          @page-change="goToPage"
+          @per-page-change="updatePerPage"
+        />
       </div>
     </div>
 
@@ -257,7 +262,7 @@
     </div>
 
     <!-- Welcome State -->
-    <div v-if="!hasSearched && !loading && !recipes.length" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
+    <div v-if="(!hasSearched || (!searchExecuted && !recipes.length)) && !loading" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
       <div class="bg-white rounded-xl shadow-lg p-8 text-center">
         <div class="mb-4">
           <Rocket :size="48" class="mx-auto text-gray-400" />
@@ -277,7 +282,8 @@ import { SEARCH_RECIPES } from '../graphql/queries'
 import RecipeCard from '../components/RecipeCard.vue'
 import HeroText from '../components/HeroText.vue'
 import FilterInput from '../components/FilterInput.vue'
-import { Search, Utensils, Loader2, FileText, UtensilsCrossed, Rocket, ListFilter, User, X } from 'lucide-vue-next'
+import PaginationControls from '../components/PaginationControls.vue'
+import { Search, Utensils, Loader2, UtensilsCrossed, Rocket, ListFilter, User, X } from 'lucide-vue-next'
 
 // Reactive search parameters
 const searchParams = reactive({
@@ -285,7 +291,7 @@ const searchParams = reactive({
   ingredients: [],
   authors: [],
   page: 1,
-  perPage: 8
+  perPage: 15
 })
 
 // Temporary input states for adding new filters
@@ -298,10 +304,9 @@ const showAuthorInput = ref(false)
 const recipes = ref([])
 const totalRecipes = ref(0)
 const currentPage = ref(1)
+const totalPages = ref(1)
 const hasNextPage = ref(false)
 const hasSearched = ref(false)
-const loadingMore = ref(false)
-const isTyping = ref(false) // Track if user is typing
 
 // Filter dropdown state
 const showFilterMenu = ref(false)
@@ -311,8 +316,8 @@ const tempFilterValue = ref('')
 
 // Execute search function - called on Enter key or button click from search input
 const executeSearch = () => {
-  // Only execute if not already loading
-  if (!loading.value) {
+  // Only execute if not already loading and has keyword
+  if (!loading.value && searchParams.keyword.trim()) {
     searchExecuted.value = true // Mark that a search has been executed
     lastSearchedKeyword.value = searchParams.keyword // Capture the keyword at search time
     performSearch(true)
@@ -323,6 +328,7 @@ const executeSearch = () => {
 const executeFilterSearch = () => {
   if (!loading.value) {
     searchExecuted.value = true // Mark that a search has been executed
+    lastSearchedKeyword.value = searchParams.keyword // Update keyword in case it changed
     performSearch(true)
   }
 }
@@ -338,7 +344,7 @@ const getQueryVariables = () => ({
 
 // GraphQL lazy query - doesn't execute until called
 // Don't pass variables here to prevent any reactive tracking
-const { result, loading, error, load, refetch, fetchMore } = useLazyQuery(
+const { result, loading, error, load, refetch } = useLazyQuery(
   SEARCH_RECIPES,
   null,  // No variables passed here - we'll pass them when calling load/refetch
   {
@@ -368,20 +374,20 @@ const lastSearchedKeyword = ref('')  // Store the keyword from the last executed
 const formattedResultsText = computed(() => {
   // Only show results text after search has been executed
   if (!searchExecuted.value || loading.value) return ''
-  
+
   const parts = []
   if (lastSearchedKeyword.value) {
     parts.push(`"${lastSearchedKeyword.value}"`)
   }
   searchParams.ingredients.forEach(i => parts.push(`"${i}"`))
   searchParams.authors.forEach(a => parts.push(`"${a}"`))
-  
+
   if (totalRecipes.value === 0) {
     return 'No recipes found'
   } else if (totalRecipes.value === 1) {
     return 'Found 1 recipe' + (parts.length ? ` for ${parts.join(' and ')}` : '')
   } else {
-    const prefix = parts.length ? `Showing ${totalRecipes.value} results for ` : `Showing ${totalRecipes.value} recipes`
+    const prefix = parts.length ? `Found ${totalRecipes.value} results for ` : `Found ${totalRecipes.value} recipes`
     return parts.length ? prefix + parts.join(' and ') : prefix
   }
 })
@@ -401,6 +407,7 @@ const updateRecipesFromResult = (queryResult, append = false) => {
     }
     totalRecipes.value = data.paginatorInfo.total
     currentPage.value = data.paginatorInfo.currentPage
+    totalPages.value = data.paginatorInfo.lastPage
     hasNextPage.value = data.paginatorInfo.hasMorePages
     hasSearched.value = true
   }
@@ -419,46 +426,41 @@ const performSearch = (reset = true) => {
     searchParams.page = 1
   }
 
-  if (hasAnySearchParams.value) {
-    // Pass variables directly when calling load/refetch
-    const variables = getQueryVariables()
-    try {
-      if (hasSearched.value) {
-        refetch(variables)
-      } else {
-        recipes.value = []
-        load(null, { variables })
-      }
-    } catch (err) {
-      console.error('Error in performSearch:', err)
+  // Pass variables directly when calling load/refetch
+  const variables = getQueryVariables()
+  try {
+    // Use load for first search, refetch for subsequent searches
+    if (!hasSearched.value) {
+      load(null, { variables })
+    } else {
+      refetch(variables)
     }
-  } else {
-    recipes.value = []
-    hasSearched.value = false
+  } catch (err) {
+    console.error('Error in performSearch:', err)
   }
 }
 
-// Load more results
-const loadMore = async () => {
-  if (!hasNextPage.value || loadingMore.value) return
+// Navigate to specific page
+const goToPage = async (page) => {
+  if (page === currentPage.value || loading.value || !hasSearched.value) return
 
-  loadingMore.value = true
-  try {
-    const nextPage = currentPage.value + 1
-    searchParams.page = nextPage  // Update page for getQueryVariables
+  searchParams.page = page
 
-    const { data } = await fetchMore({
-      variables: getQueryVariables()
-    })
+  // Fetch new page
+  const variables = getQueryVariables()
+  await refetch(variables)
+}
 
-    if (data?.recipes) {
-      updateRecipesFromResult(data, true)
-    }
-  } catch (err) {
-    console.error('Error loading more recipes:', err)
-  } finally {
-    loadingMore.value = false
-  }
+// Update per page and refresh results
+const updatePerPage = async (perPage) => {
+  if (perPage === searchParams.perPage || loading.value || !hasSearched.value) return
+
+  searchParams.perPage = perPage
+  searchParams.page = 1 // Reset to first page when changing perPage
+
+  // Fetch with new perPage
+  const variables = getQueryVariables()
+  await refetch(variables)
 }
 
 // Clear search
@@ -473,8 +475,8 @@ const clearSearch = () => {
   showAuthorInput.value = false
   searchExecuted.value = false // Reset search execution flag
   lastSearchedKeyword.value = '' // Clear the last searched keyword
-  
-  // Reload recipes with empty search params (like page load)
+
+  // Reset to initial state - show 15 random recipes
   const variables = getQueryVariables()
   refetch(variables)
 }
@@ -545,27 +547,6 @@ const selectFilterType = (type) => {
   }
 }
 
-const addFilterFromDropdown = () => {
-  const value = tempFilterValue.value.trim()
-  if (!value) return
-  
-  if (selectedFilterType.value === 'ingredient' && !searchParams.ingredients.includes(value)) {
-    searchParams.ingredients.push(value)
-    executeFilterSearch()
-  } else if (selectedFilterType.value === 'author' && !searchParams.authors.includes(value)) {
-    searchParams.authors.push(value)
-    executeFilterSearch()
-  }
-  
-  tempFilterValue.value = ''
-  selectedFilterType.value = null
-}
-
-const cancelFilterInput = () => {
-  tempFilterValue.value = ''
-  selectedFilterType.value = null
-}
-
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
   if (filterMenuRef.value && !filterMenuRef.value.contains(event.target)) {
@@ -575,10 +556,10 @@ const handleClickOutside = (event) => {
 
 // Component is ready
 onMounted(() => {
-  // Load initial recipes on page load with current variables
+  // Load initial 15 random recipes on page load (not considered a search)
   const variables = getQueryVariables()
   load(null, { variables })
-  
+
   // Add click outside listener for dropdown
   document.addEventListener('click', handleClickOutside)
 })

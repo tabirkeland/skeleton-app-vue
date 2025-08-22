@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PexelApiClient
 {
@@ -62,6 +64,9 @@ class PexelApiClient
             ])->get("{$this->baseUrl}/search", $params);
 
             if ($response->successful()) {
+                // Store rate limit headers for tracking
+                $this->storeRateLimitInfo($response->headers());
+
                 // Log rate limit headers if available
                 if ($response->hasHeader('X-Ratelimit-Limit')) {
                     Log::debug('Pexels API rate limits', [
@@ -120,5 +125,146 @@ class PexelApiClient
                 ],
             ],
         ];
+    }
+
+    /**
+     * Search for photos in batch, minimizing API calls.
+     * Takes multiple queries and returns a map of query => photos.
+     *
+     * @param  array  $queries Array of search queries
+     * @param  array  $options Search options to apply to all queries
+     * @return array Map of normalized query => photos array
+     */
+    public function batchSearchPhotos(array $queries, array $options = []): array
+    {
+        // Normalize and deduplicate queries
+        $normalizedQueries = collect($queries)
+            ->map(fn ($q) => $this->normalizeQuery($q))
+            ->unique()
+            ->values()
+            ->all();
+
+        $results = [];
+
+        // For testing, return placeholder for all queries
+        if (app()->environment('testing')) {
+            foreach ($normalizedQueries as $query) {
+                $results[$query] = $this->getPlaceholderResponse($query);
+            }
+
+            return $results;
+        }
+
+        // Check rate limits before making requests
+        if (!$this->checkRateLimit(count($normalizedQueries))) {
+            Log::warning('Pexels API rate limit would be exceeded, using placeholders', [
+                'queries_count' => count($normalizedQueries),
+                'remaining' => $this->getRemainingRequests(),
+            ]);
+
+            foreach ($normalizedQueries as $query) {
+                $results[$query] = $this->getPlaceholderResponse($query);
+            }
+
+            return $results;
+        }
+
+        // Fetch photos for each unique query
+        foreach ($normalizedQueries as $query) {
+            // Check cache first
+            $cacheKey = $this->getCacheKey($query, $options);
+            $cached = Cache::get($cacheKey);
+
+            if ($cached !== null) {
+                Log::info('CACHE HIT for query', ['query' => $query, 'cache_key' => $cacheKey]);
+                $results[$query] = $cached;
+
+                continue;
+            }
+
+            Log::info('CACHE MISS - Making API call', ['query' => $query, 'cache_key' => $cacheKey]);
+
+            // Track API calls for testing
+            $callCount = Cache::get('test_api_call_count', 0);
+            Cache::put('test_api_call_count', $callCount + 1, 3600);
+
+            // Fetch from API
+            $response = $this->searchPhotos($query, $options);
+
+            if ($response) {
+                // Cache for 24 hours as per best practices
+                Cache::put($cacheKey, $response, now()->addHours(24));
+                Log::info('CACHED API response', ['query' => $query, 'cache_key' => $cacheKey]);
+                $results[$query] = $response;
+            } else {
+                $results[$query] = $this->getPlaceholderResponse($query);
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Normalize a search query for consistent caching.
+     */
+    protected function normalizeQuery(string $query): string
+    {
+        return Str::of($query)
+            ->trim()
+            ->lower()
+            ->replaceMatches('/\s+/', ' ')
+            ->value();
+    }
+
+    /**
+     * Generate cache key for a query and options.
+     */
+    protected function getCacheKey(string $query, array $options): string
+    {
+        $normalized = $this->normalizeQuery($query);
+        $optionsHash = md5(json_encode($options));
+
+        return "pexels_photos_{$normalized}_{$optionsHash}";
+    }
+
+    /**
+     * Check if we have enough rate limit remaining for the given number of requests.
+     */
+    protected function checkRateLimit(int $requestsNeeded): bool
+    {
+        $remaining = $this->getRemainingRequests();
+
+        // Keep a buffer of 10 requests
+        return $remaining === null || $remaining > ($requestsNeeded + 10);
+    }
+
+    /**
+     * Get remaining API requests from cache.
+     */
+    protected function getRemainingRequests(): ?int
+    {
+        return Cache::get('pexels_rate_limit_remaining');
+    }
+
+    /**
+     * Store rate limit information from response headers.
+     */
+    protected function storeRateLimitInfo(array $headers): void
+    {
+        if (isset($headers['X-Ratelimit-Remaining'])) {
+            Cache::put(
+                'pexels_rate_limit_remaining',
+                (int) $headers['X-Ratelimit-Remaining'][0],
+                now()->addMinutes(5)
+            );
+        }
+
+        if (isset($headers['X-Ratelimit-Reset'])) {
+            Cache::put(
+                'pexels_rate_limit_reset',
+                (int) $headers['X-Ratelimit-Reset'][0],
+                now()->addHours(1)
+            );
+        }
     }
 }

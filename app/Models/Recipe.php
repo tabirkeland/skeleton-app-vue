@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Actions\Recipe\GetRecipeImageUrlAction;
 use App\Builders\RecipeBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -165,22 +164,5 @@ class Recipe extends Model
     public function getStepCountAttribute(): int
     {
         return $this->steps->count();
-    }
-
-    /**
-     * Get image URL for the recipe.
-     * If no image_url is set, it will fetch one using the GetRecipeImageUrlAction.
-     */
-    public function getImageUrlAttribute($value)
-    {
-        // If we already have an image URL, return it
-        if ($value) {
-            return $value;
-        }
-
-        // Use the action to get an image URL
-        $action = app(GetRecipeImageUrlAction::class);
-
-        return $action->execute($this);
     }
 }

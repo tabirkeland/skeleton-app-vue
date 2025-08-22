@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\DB;
 
 class GenerateRecipeAction
 {
+    protected GetBatchImageUrlsAction $batchImageAction;
+
+    public function __construct(GetBatchImageUrlsAction $batchImageAction)
+    {
+        $this->batchImageAction = $batchImageAction;
+    }
+
     /**
      * Execute recipe generation with factory or provided data.
      *
@@ -37,7 +44,13 @@ class GenerateRecipeAction
 
         // If specific data is provided, use it
         if (isset($generationOptions['data'])) {
-            return $this->generateFromData($generationOptions['data'], $withRelationships);
+            $recipe = $this->generateFromData($generationOptions['data'], $withRelationships);
+            // Fetch image if not provided
+            if (empty($recipe->getRawOriginal('image_url'))) {
+                $this->fetchImagesForRecipes([$recipe]);
+            }
+
+            return $recipe;
         }
 
         // Generate using factory
@@ -49,6 +62,9 @@ class GenerateRecipeAction
                 $progressCallback($i + 1, $count);
             }
         }
+
+        // Fetch images for all recipes that don't have them
+        $this->fetchImagesForRecipes($recipes);
 
         return $count === 1 ? $recipes[0] : $recipes;
     }
@@ -110,16 +126,7 @@ class GenerateRecipeAction
     {
         $factory = Recipe::factory();
 
-        // Configure image source if specified
-        if (isset($options['image_source'])) {
-            // For now, we'll keep the existing logic for backward compatibility
-            // The GetRecipeImageUrlAction will be used when displaying recipes
-            $imageUrl = $options['image_source'] === 'loremflickr'
-                ? 'https://loremflickr.com/640/480/food,recipe,cooking'
-                : 'https://picsum.photos/640/480?random='.rand(1, 10000);
-
-            $factory = $factory->state(['image_url' => $imageUrl]);
-        }
+        // Don't set image_url here - we'll fetch from Pexels API after creation
 
         // Add relationships if requested
         if ($withRelationships) {
@@ -136,6 +143,33 @@ class GenerateRecipeAction
         }
 
         return $factory->create();
+    }
+
+    /**
+     * Fetch images for recipes that don't have them.
+     */
+    private function fetchImagesForRecipes(array $recipes): void
+    {
+        // Filter recipes that need images
+        $recipesNeedingImages = collect($recipes)->filter(
+            fn ($r) => empty($r->getRawOriginal('image_url'))
+        );
+
+        if ($recipesNeedingImages->isEmpty()) {
+            return;
+        }
+
+        // Fetch images in batch
+        $imageMap = $this->batchImageAction->execute($recipesNeedingImages);
+
+        // Update each recipe with its fetched image
+        foreach ($recipesNeedingImages as $recipe) {
+            if (isset($imageMap[$recipe->id])) {
+                $recipe->update(['image_url' => $imageMap[$recipe->id]]);
+                // Refresh the model to reflect the update
+                $recipe->refresh();
+            }
+        }
     }
 
     /**

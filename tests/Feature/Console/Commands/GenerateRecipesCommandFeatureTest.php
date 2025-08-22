@@ -73,7 +73,6 @@ class GenerateRecipesCommandFeatureTest extends TestCase
         // Second run with different parameters
         $this->artisan('recipes:generate', [
             '--count' => 2,
-            '--image-source' => 'loremflickr',
         ])->assertExitCode(0);
 
         $secondRunCount = Recipe::count();
@@ -83,12 +82,11 @@ class GenerateRecipesCommandFeatureTest extends TestCase
         $this->assertGreaterThan($firstRunCount, $secondRunCount);
         $this->assertGreaterThan($firstRunAuthorCount, $secondRunAuthorCount);
 
-        // Verify mixed image sources
-        $picsumCount = Recipe::where('image_url', 'like', '%picsum.photos%')->count();
-        $flickrCount = Recipe::where('image_url', 'like', '%loremflickr.com%')->count();
-
-        $this->assertGreaterThan(0, $picsumCount);
-        $this->assertGreaterThan(0, $flickrCount);
+        // Verify all recipes have image URLs
+        $recipes = Recipe::all();
+        foreach ($recipes as $recipe) {
+            $this->assertNotEmpty($recipe->image_url);
+        }
     }
 
     /**
@@ -203,33 +201,6 @@ class GenerateRecipesCommandFeatureTest extends TestCase
         $this->artisan('recipes:generate', ['--help'])
             ->expectsOutputToContain('Generate fake recipe data with authors, ingredients, and steps using Faker')
             ->assertExitCode(0);
-    }
-
-    /**
-     * @test
-     */
-    public function it_works_with_different_image_sources_simultaneously()
-    {
-        // Generate with picsum
-        $this->artisan('recipes:generate', [
-            '--count' => 2,
-            '--image-source' => 'picsum',
-        ])->assertExitCode(0);
-
-        // Generate with loremflickr
-        $this->artisan('recipes:generate', [
-            '--count' => 2,
-            '--image-source' => 'loremflickr',
-        ])->assertExitCode(0);
-
-        $this->assertDatabaseCount('recipes', 4);
-
-        // Verify both image sources are present
-        $picsumRecipes = Recipe::where('image_url', 'like', '%picsum.photos%')->count();
-        $flickrRecipes = Recipe::where('image_url', 'like', '%loremflickr.com%')->count();
-
-        $this->assertEquals(2, $picsumRecipes);
-        $this->assertEquals(2, $flickrRecipes);
     }
 
     /**
