@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Search;
+namespace App\Actions\Recipe;
 
 use App\Models\Recipe;
 use App\Contracts\Action;

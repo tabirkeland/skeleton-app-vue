@@ -139,77 +139,6 @@ type RecipeStep {
     updated_at: DateTime!
 }
 
-"Input for creating a recipe author"
-input CreateRecipeAuthorInput {
-    "Author name"
-    name: String! @rules(apply: ["required", "string", "max:255"])
-
-    "Author email"
-    email: String! @rules(apply: ["required", "email", "max:255"])
-
-    "About the author"
-    about: String
-}
-
-"Input for creating a recipe ingredient"
-input CreateRecipeIngredientInput {
-    "Ingredient name"
-    name: String! @rules(apply: ["required", "string", "max:255"])
-
-    "Quantity amount"
-    quantity: Float @rules(apply: ["numeric", "min:0"])
-
-    "Unit of measurement"
-    unit: String @rules(apply: ["string", "max:50"])
-}
-
-"Input for creating a recipe step"
-input CreateRecipeStepInput {
-    "Step title"
-    title: String @rules(apply: ["string", "max:255"])
-
-    "Step description"
-    description: String! @rules(apply: ["required", "string"])
-
-    "Step order number"
-    order: Int @rules(apply: ["integer", "min:1"])
-}
-
-"Input for creating a new recipe"
-input CreateRecipeInput {
-    "Recipe name"
-    name: String! @rules(apply: ["required", "string", "min:1", "max:255"])
-
-    "Recipe description"
-    description: String! @rules(apply: ["required", "string", "min:1"])
-
-    "URL-friendly identifier"
-    slug: String @rules(apply: ["string", "max:255", "unique:recipes,slug"])
-
-    "Optional image URL"
-    image_url: String @rules(apply: ["url", "max:500"])
-
-    "Preparation time in minutes"
-    prep_time: Int @rules(apply: ["integer", "min:0", "max:1440"])
-
-    "Cooking time in minutes"
-    cook_time: Int @rules(apply: ["integer", "min:0", "max:1440"])
-
-    "Number of servings"
-    servings: Int @rules(apply: ["integer", "min:1", "max:100"])
-
-    "List of authors"
-    authors: [CreateRecipeAuthorInput!]!
-        @rules(apply: ["required", "array", "min:1"])
-
-    "List of ingredients"
-    ingredients: [CreateRecipeIngredientInput!]!
-        @rules(apply: ["required", "array", "min:1"])
-
-    "Cooking steps"
-    steps: [CreateRecipeStepInput!]!
-        @rules(apply: ["required", "array", "min:1"])
-}
 
 type Query {
     "Search recipes with filters and pagination"
@@ -232,11 +161,6 @@ type Query {
     health: String! @field(resolver: "App\\GraphQL\\Queries\\Health@resolve")
 }
 
-type Mutation {
-    "Create a new recipe"
-    createRecipe(input: CreateRecipeInput!): Recipe!
-        @field(resolver: "App\\GraphQL\\Mutations\\CreateRecipe")
-}
 
 # Scalar type for DateTime
 scalar DateTime

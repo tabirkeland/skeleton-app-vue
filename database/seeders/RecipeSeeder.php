@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Recipe;
+use App\Actions\Recipe\GenerateRecipeAction;
 use Illuminate\Database\Seeder;
 
 class RecipeSeeder extends Seeder
@@ -12,13 +12,17 @@ class RecipeSeeder extends Seeder
      */
     public function run(): void
     {
+        $generateRecipeAction = app(GenerateRecipeAction::class);
+        
         $recipes = [
             [
                 'name' => 'Classic Chocolate Chip Cookies',
                 'description' => 'These are the perfect chewy chocolate chip cookies with crispy edges and soft centers. A family favorite that never disappoints!',
+                'category' => 'Dessert',
                 'prep_time' => 15,
                 'cook_time' => 10,
                 'servings' => 24,
+                'image_url' => 'https://loremflickr.com/640/480/cookies,chocolate,dessert',
                 'authors' => [
                     ['name' => 'Sarah Baker', 'email' => 'baker@sweetsmiles.com', 'about' => 'Professional baker with 10 years experience'],
                 ],
@@ -48,9 +52,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Homemade Pizza Dough',
                 'description' => 'Perfect pizza dough recipe that yields a crispy yet chewy crust. Great for making authentic pizzas at home.',
+                'category' => 'Italian',
                 'prep_time' => 20,
                 'cook_time' => 15,
                 'servings' => 4,
+                'image_url' => 'https://loremflickr.com/640/480/pizza,dough,italian',
                 'authors' => [
                     ['name' => 'Mario Rossi', 'email' => 'chef@pizzapalace.com', 'about' => 'Italian chef specializing in traditional pizzas'],
                 ],
@@ -76,9 +82,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Beef and Vegetable Stew',
                 'description' => 'A hearty, comforting stew perfect for cold days. Tender beef with carrots, potatoes, and herbs in a rich broth.',
+                'category' => 'Main Course',
                 'prep_time' => 30,
                 'cook_time' => 120,
                 'servings' => 6,
+                'image_url' => 'https://loremflickr.com/640/480/stew,beef,comfort',
                 'authors' => [
                     ['name' => 'James Thompson', 'email' => 'chef@heartyhome.com', 'about' => 'Comfort food specialist'],
                 ],
@@ -112,9 +120,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Vanilla Bean Cheesecake',
                 'description' => 'Rich and creamy New York style cheesecake with real vanilla bean and a graham cracker crust.',
+                'category' => 'Dessert',
                 'prep_time' => 30,
                 'cook_time' => 60,
                 'servings' => 12,
+                'image_url' => 'https://loremflickr.com/640/480/cheesecake,dessert,vanilla',
                 'authors' => [
                     ['name' => 'Emily Chen', 'email' => 'pastry@sweetdreams.com', 'about' => 'Pastry chef specializing in desserts'],
                 ],
@@ -145,9 +155,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Thai Green Curry',
                 'description' => 'Authentic Thai green curry with coconut milk, vegetables, and aromatic spices. Customize with your choice of protein.',
+                'category' => 'Thai',
                 'prep_time' => 20,
                 'cook_time' => 30,
                 'servings' => 4,
+                'image_url' => 'https://loremflickr.com/640/480/curry,thai,asian',
                 'authors' => [
                     ['name' => 'Somchai Prasert', 'email' => 'chef@thaispice.com', 'about' => 'Thai cuisine expert'],
                 ],
@@ -180,9 +192,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Chocolate Lava Cake',
                 'description' => 'Individual chocolate cakes with molten chocolate centers. Perfect dessert for chocolate lovers!',
+                'category' => 'Dessert',
                 'prep_time' => 10,
                 'cook_time' => 14,
                 'servings' => 4,
+                'image_url' => 'https://loremflickr.com/640/480/chocolate,cake,dessert',
                 'authors' => [
                     ['name' => 'Pierre Dubois', 'email' => 'pastry@chocohaven.com', 'about' => 'French pastry chef'],
                 ],
@@ -213,9 +227,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Mediterranean Quinoa Salad',
                 'description' => 'Fresh and healthy quinoa salad with Mediterranean flavors. Perfect for meal prep or light lunches.',
+                'category' => 'Salad',
                 'prep_time' => 15,
                 'cook_time' => 15,
                 'servings' => 6,
+                'image_url' => 'https://loremflickr.com/640/480/salad,quinoa,mediterranean',
                 'authors' => [
                     ['name' => 'Maria Papadopoulos', 'email' => 'healthy@medkitchen.com', 'about' => 'Mediterranean cuisine specialist'],
                 ],
@@ -250,9 +266,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Classic French Onion Soup',
                 'description' => 'Traditional French onion soup with caramelized onions in rich beef broth, topped with Gruyère cheese.',
+                'category' => 'Soup',
                 'prep_time' => 15,
                 'cook_time' => 90,
                 'servings' => 6,
+                'image_url' => 'https://loremflickr.com/640/480/soup,french,onion',
                 'authors' => [
                     ['name' => 'Jacques Martin', 'email' => 'chef@frenchbistro.com', 'about' => 'French cuisine chef'],
                 ],
@@ -286,9 +304,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Banana Bread',
                 'description' => 'Moist and delicious banana bread made with ripe bananas and a hint of cinnamon. Perfect for breakfast or snacking.',
+                'category' => 'Breakfast',
                 'prep_time' => 10,
                 'cook_time' => 65,
                 'servings' => 8,
+                'image_url' => 'https://loremflickr.com/640/480/bread,banana,breakfast',
                 'authors' => [
                     ['name' => 'Betty Johnson', 'email' => 'baker@homecomfort.com', 'about' => 'Home baking enthusiast'],
                 ],
@@ -320,9 +340,11 @@ class RecipeSeeder extends Seeder
             [
                 'name' => 'Chicken Alfredo Pasta',
                 'description' => 'Creamy chicken alfredo with perfectly cooked fettuccine in a rich parmesan sauce.',
+                'category' => 'Pasta',
                 'prep_time' => 15,
                 'cook_time' => 25,
                 'servings' => 4,
+                'image_url' => 'https://loremflickr.com/640/480/pasta,alfredo,italian',
                 'authors' => [
                     ['name' => 'Antonio Verdi', 'email' => 'chef@italianclassic.com', 'about' => 'Italian pasta specialist'],
                 ],
@@ -354,43 +376,14 @@ class RecipeSeeder extends Seeder
             ],
         ];
 
+        // Use the GenerateRecipeAction to create each recipe
         foreach ($recipes as $recipeData) {
-            // Extract related data
-            $authors = $recipeData['authors'];
-            $ingredients = $recipeData['ingredients'];
-            $steps = $recipeData['steps'];
-
-            // Store recipe name for uniqueness check
-            $recipeName = $recipeData['name'];
-
-            // Remove related data from main recipe data
-            unset($recipeData['authors'], $recipeData['ingredients'], $recipeData['steps']);
-
-            // Use updateOrCreate with name for uniqueness
-            // The Recipe model will auto-generate the slug
-            $recipe = Recipe::updateOrCreate(
-                ['name' => $recipeName],
-                $recipeData
-            );
-
-            // Sync authors - delete existing and recreate
-            $recipe->authors()->delete();
-            foreach ($authors as $author) {
-                $recipe->authors()->create($author);
-            }
-
-            // Sync ingredients - delete existing and recreate
-            $recipe->ingredients()->delete();
-            foreach ($ingredients as $ingredient) {
-                $recipe->ingredients()->create($ingredient);
-            }
-
-            // Sync steps - delete existing and recreate
-            $recipe->steps()->delete();
-            foreach ($steps as $index => $step) {
-                $step['order'] = $index + 1;
-                $recipe->steps()->create($step);
-            }
+            $generateRecipeAction->execute([
+                'data' => $recipeData,
+                'with_relationships' => true,
+            ]);
         }
+        
+        $this->command->info('Recipe seeder completed with categories!');
     }
 }

@@ -27,31 +27,12 @@ interface Action
 
 ```
 app/Actions/
-├── Recipe/
-│   └── CreateRecipeAction.php    # Creates new recipes with slug generation
 ├── Search/
 │   └── SearchRecipesAction.php   # Handles recipe search with filters
 └── README.md                      # This documentation
 ```
 
 ## Implementation Examples
-
-### Creating a Recipe
-
-```php
-class CreateRecipeAction implements Action
-{
-    public function __construct(private Recipe $recipe) {}
-    
-    public function execute(array $parameters = []): mixed
-    {
-        // Business logic for recipe creation
-        // - Data normalization
-        // - Slug generation
-        // - Transaction handling
-    }
-}
-```
 
 ### Searching Recipes
 
@@ -72,28 +53,12 @@ class SearchRecipesAction implements Action
 
 ## Usage in GraphQL Resolvers
 
-Actions are injected into GraphQL resolvers via dependency injection:
-
-```php
-class CreateRecipe
-{
-    public function __construct(CreateRecipeAction $createAction)
-    {
-        $this->createAction = $createAction;
-    }
-    
-    public function __invoke($rootValue, array $args)
-    {
-        return $this->createAction->execute($args['input']);
-    }
-}
-```
+Actions are injected into GraphQL resolvers via dependency injection. For example, the SearchRecipes query uses SearchRecipesAction to handle complex recipe filtering.
 
 ## Testing
 
 Each action has comprehensive unit tests in `tests/Unit/Actions/`:
 
-- `CreateRecipeActionTest.php` - 10 tests covering creation scenarios
 - `SearchRecipesActionTest.php` - 14 tests covering search functionality
 
 ## Benefits

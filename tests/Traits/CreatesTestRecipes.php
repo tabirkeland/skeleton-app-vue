@@ -2,6 +2,7 @@
 
 namespace Tests\Traits;
 
+use App\Actions\Recipe\GenerateRecipeAction;
 use App\Models\Recipe;
 
 trait CreatesTestRecipes
@@ -62,12 +63,14 @@ trait CreatesTestRecipes
 
     /**
      * Create a complete recipe with all relationships.
+     * Uses the centralized GenerateRecipeAction for consistency.
      */
     protected function createCompleteRecipe(array $overrides = []): Recipe
     {
         $recipeData = array_merge([
             'name' => 'Test Recipe',
             'description' => 'A test recipe description',
+            'category' => 'Main Course',
         ], $overrides['recipe'] ?? []);
 
         $authorData = array_merge([
@@ -85,18 +88,46 @@ trait CreatesTestRecipes
             ['description' => 'Step 2', 'order' => 2],
         ];
 
-        $recipe = Recipe::factory()->create($recipeData);
-
-        $recipe->authors()->create($authorData);
-
-        foreach ($ingredients as $ingredient) {
-            $recipe->ingredients()->create($ingredient);
-        }
-
-        foreach ($steps as $step) {
-            $recipe->steps()->create($step);
-        }
-
-        return $recipe;
+        $generateRecipeAction = app(GenerateRecipeAction::class);
+        
+        return $generateRecipeAction->execute([
+            'data' => array_merge($recipeData, [
+                'authors' => [$authorData],
+                'ingredients' => $ingredients,
+                'steps' => $steps,
+            ]),
+            'with_relationships' => true,
+        ]);
+    }
+    
+    /**
+     * Create multiple recipes using the factory with FakerRestaurant.
+     * Leverages the improved RecipeFactory with realistic food data.
+     */
+    protected function createMultipleRecipes(int $count = 5, array $options = []): array
+    {
+        $generateRecipeAction = app(GenerateRecipeAction::class);
+        
+        return $generateRecipeAction->execute(array_merge([
+            'count' => $count,
+            'with_relationships' => true,
+        ], $options));
+    }
+    
+    /**
+     * Create a recipe using factory without relationships.
+     */
+    protected function createSimpleRecipe(array $overrides = []): Recipe
+    {
+        return Recipe::factory()->create($overrides);
+    }
+    
+    /**
+     * Create a recipe with factory complete method.
+     * Uses the enhanced factory with FakerRestaurant data.
+     */
+    protected function createFactoryCompleteRecipe(array $options = []): Recipe
+    {
+        return Recipe::factory()->complete($options)->create();
     }
 }

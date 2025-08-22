@@ -244,38 +244,6 @@ query GetRecipe {
 }
 ```
 
-**Create recipe with related data:**
-
-```graphql
-mutation CreateRecipe {
-    createRecipe(
-        input: {
-            name: "New Recipe"
-            description: "Delicious recipe"
-            prep_time: 30
-            cook_time: 45
-            servings: 4
-            authors: [{ name: "Chef Name", email: "chef@example.com" }]
-            ingredients: [
-                { name: "Flour", quantity: 2, unit: "cups" }
-                { name: "Sugar", quantity: 1, unit: "cup" }
-            ]
-            steps: [
-                {
-                    title: "Prepare"
-                    description: "Prepare ingredients"
-                    order: 1
-                }
-                { title: "Mix", description: "Mix everything", order: 2 }
-            ]
-        }
-    ) {
-        id
-        slug
-        name
-    }
-}
-```
 
 ## Development Commands
 

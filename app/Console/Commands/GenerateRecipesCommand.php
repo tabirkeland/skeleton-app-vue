@@ -2,8 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Recipe;
-use Faker\Factory as Faker;
+use App\Actions\Recipe\GenerateRecipeAction;
 use Illuminate\Console\Command;
 
 class GenerateRecipesCommand extends Command
@@ -28,156 +27,59 @@ class GenerateRecipesCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Generate fake recipe data with authors, ingredients, and steps using Faker';
+    protected $description = 'Generate fake recipe data with authors, ingredients, and steps using Faker and FakerRestaurant';
 
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(GenerateRecipeAction $generateRecipeAction)
     {
-        $faker = Faker::create();
-
         $count = (int) $this->option('count');
-        $minIngredients = (int) $this->option('min-ingredients');
-        $maxIngredients = (int) $this->option('max-ingredients');
-        $minSteps = (int) $this->option('min-steps');
-        $maxSteps = (int) $this->option('max-steps');
-        $minAuthors = (int) $this->option('min-authors');
-        $maxAuthors = (int) $this->option('max-authors');
-        $imageSource = $this->option('image-source');
-
-        $this->info("Generating {$count} recipes...");
-
+        
+        $this->info("Generating {$count} recipes with enhanced FakerRestaurant data...");
+        
         $progressBar = $this->output->createProgressBar($count);
         $progressBar->start();
-
-        for ($i = 0; $i < $count; $i++) {
-            $this->generateRecipe($faker, $minIngredients, $maxIngredients, $minSteps, $maxSteps, $minAuthors, $maxAuthors, $imageSource);
-            $progressBar->advance();
-        }
-
+        
+        // Prepare parameters for the action
+        $parameters = [
+            'count' => $count,
+            'with_relationships' => true,
+            'min_ingredients' => (int) $this->option('min-ingredients'),
+            'max_ingredients' => (int) $this->option('max-ingredients'),
+            'min_steps' => (int) $this->option('min-steps'),
+            'max_steps' => (int) $this->option('max-steps'),
+            'min_authors' => (int) $this->option('min-authors'),
+            'max_authors' => (int) $this->option('max-authors'),
+            'image_source' => $this->option('image-source'),
+            'progress_callback' => function ($current, $total) use ($progressBar) {
+                $progressBar->advance();
+            },
+        ];
+        
+        // Execute the action
+        $recipes = $generateRecipeAction->execute($parameters);
+        
         $progressBar->finish();
         $this->newLine();
+        
+        // Display summary
         $this->info("Successfully generated {$count} recipes!");
-    }
-
-    private function generateRecipe($faker, $minIngredients, $maxIngredients, $minSteps, $maxSteps, $minAuthors, $maxAuthors, $imageSource)
-    {
-        // Generate recipe data
-        $recipeName = $this->generateRecipeName($faker);
-
-        $recipeData = [
-            'name' => $recipeName,
-            'description' => $faker->text(200),
-            'prep_time' => $faker->numberBetween(5, 60),
-            'cook_time' => $faker->numberBetween(10, 180),
-            'servings' => $faker->numberBetween(1, 12),
-            'image_url' => $this->generateImageUrl($imageSource),
-        ];
-
-        // Create or update recipe
-        $recipe = Recipe::updateOrCreate(
-            ['name' => $recipeName],
-            $recipeData
-        );
-
-        // Generate authors
-        $numAuthors = $faker->numberBetween($minAuthors, $maxAuthors);
-        $recipe->authors()->delete();
-        for ($j = 0; $j < $numAuthors; $j++) {
-            $recipe->authors()->create([
-                'name' => $faker->name,
-                'email' => $faker->unique()->safeEmail,
-                'about' => $faker->optional(0.7)->text(100),
-            ]);
+        
+        if ($this->output->isVerbose()) {
+            $this->newLine();
+            $this->table(
+                ['Recipe Name', 'Category', 'Ingredients', 'Steps', 'Authors'],
+                collect($recipes)->map(fn($recipe) => [
+                    $recipe->name,
+                    $recipe->category ?? 'N/A',
+                    $recipe->ingredients->count(),
+                    $recipe->steps->count(),
+                    $recipe->authors->count(),
+                ])->toArray()
+            );
+        } else {
+            $this->info('Run with -v flag to see detailed recipe information.');
         }
-
-        // Generate ingredients
-        $numIngredients = $faker->numberBetween($minIngredients, $maxIngredients);
-        $recipe->ingredients()->delete();
-        $usedIngredients = [];
-
-        for ($j = 0; $j < $numIngredients; $j++) {
-            $ingredient = $this->generateUniqueIngredient($faker, $usedIngredients);
-            $usedIngredients[] = $ingredient['name'];
-
-            $recipe->ingredients()->create($ingredient);
-        }
-
-        // Generate steps
-        $numSteps = $faker->numberBetween($minSteps, $maxSteps);
-        $recipe->steps()->delete();
-
-        for ($j = 0; $j < $numSteps; $j++) {
-            $recipe->steps()->create([
-                'title' => $this->generateStepTitle($faker, $j + 1),
-                'description' => $faker->sentence(10),
-                'order' => $j + 1,
-            ]);
-        }
-    }
-
-    private function generateRecipeName($faker)
-    {
-        $adjectives = ['Classic', 'Homemade', 'Delicious', 'Easy', 'Quick', 'Perfect', 'Traditional', 'Crispy', 'Creamy', 'Fresh', 'Spicy', 'Sweet', 'Savory'];
-        $foods = [
-            'Chocolate Chip Cookies', 'Pizza Margherita', 'Beef Stew', 'Chicken Soup', 'Apple Pie', 'Banana Bread',
-            'Caesar Salad', 'Grilled Salmon', 'Pasta Carbonara', 'Vegetable Curry', 'Pancakes', 'Meatballs',
-            'Fish Tacos', 'Mushroom Risotto', 'BBQ Ribs', 'Garlic Bread', 'Cheesecake', 'Stir Fry',
-            'Lasagna', 'French Toast', 'Chicken Wings', 'Pad Thai', 'Burrito Bowl', 'Clam Chowder',
-        ];
-
-        return $faker->randomElement($adjectives).' '.$faker->randomElement($foods);
-    }
-
-    private function generateImageUrl($source)
-    {
-        $width = 640;
-        $height = 480;
-
-        switch ($source) {
-            case 'loremflickr':
-                return "https://loremflickr.com/{$width}/{$height}/food,recipe,cooking";
-            case 'picsum':
-            default:
-                return "https://picsum.photos/{$width}/{$height}?random=".rand(1, 1000);
-        }
-    }
-
-    private function generateUniqueIngredient($faker, $usedIngredients)
-    {
-        $commonIngredients = [
-            'flour', 'sugar', 'salt', 'pepper', 'olive oil', 'butter', 'eggs', 'milk', 'cream', 'cheese',
-            'onion', 'garlic', 'tomato', 'carrot', 'potato', 'bell pepper', 'mushroom', 'spinach',
-            'chicken breast', 'ground beef', 'salmon', 'bacon', 'rice', 'pasta', 'bread', 'lemon',
-            'herbs', 'spices', 'vanilla extract', 'baking powder', 'honey', 'soy sauce', 'vinegar',
-        ];
-
-        $units = ['cups', 'tbsp', 'tsp', 'lbs', 'oz', 'cloves', 'slices', null];
-
-        do {
-            $ingredient = $faker->randomElement($commonIngredients);
-        } while (in_array($ingredient, $usedIngredients));
-
-        return [
-            'name' => $ingredient,
-            'quantity' => $faker->randomFloat(2, 0.25, 4),
-            'unit' => $faker->randomElement($units),
-        ];
-    }
-
-    private function generateStepTitle($faker, $stepNumber)
-    {
-        $stepTitles = [
-            'Prepare ingredients', 'Preheat oven', 'Mix dry ingredients', 'Combine wet ingredients',
-            'Heat oil', 'Sauté vegetables', 'Add seasoning', 'Simmer', 'Bake', 'Cool', 'Serve',
-            'Chop vegetables', 'Marinate', 'Grill', 'Boil water', 'Drain', 'Garnish', 'Chill',
-        ];
-
-        if ($stepNumber === 1) {
-            return $faker->randomElement(['Prepare ingredients', 'Preheat oven', 'Heat oil']);
-        }
-
-        return $faker->randomElement($stepTitles);
     }
 }

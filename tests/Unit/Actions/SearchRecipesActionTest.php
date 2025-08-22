@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Actions;
 
-use App\Actions\Search\SearchRecipesAction;
+use App\Actions\Recipe\SearchRecipesAction;
 use App\Models\Recipe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -510,7 +510,7 @@ class SearchRecipesActionTest extends TestCase
      */
     public function it_supports_partial_ingredient_matching_per_requirements()
     {
-        // This test validates the requirement: "Ingredient - this could be a partial match; 
+        // This test validates the requirement: "Ingredient - this could be a partial match;
         // for example, 'potato' should match '3 large potatoes' in the ingredients list"
 
         $recipe1 = Recipe::factory()->create(['name' => 'Mashed Potatoes']);
