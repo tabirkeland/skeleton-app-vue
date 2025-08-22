@@ -1,23 +1,23 @@
 <template>
   <div class="min-h-screen">
     <!-- Hero Section -->
-    <div class="relative text-white pb-16 pt-12 min-h-[60vh] bg-cover bg-center bg-no-repeat"
+    <div class="relative text-white pb-14 pt-8 min-h-[55vh] bg-cover bg-center bg-no-repeat"
          style="background-image: url('/src/assets/hero-background.png')">
       <!-- Optional overlay for better text readability -->
       <div class="absolute inset-0 bg-black/20"></div>
 
       <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div class="flex justify-center">
-          <img src="/src/assets/logo-text.png" alt="Wild Alaskan Recipes" class="h-40 md:h-56 lg:h-64 filter brightness-0 invert drop-shadow-lg">
+          <img src="/src/assets/logo-text.png" alt="Wild Alaskan Recipes" class="h-36 md:h-48 lg:h-56 filter brightness-0 invert drop-shadow-lg">
         </div>
         <HeroText />
       </div>
     </div>
 
-    <!-- Search Form -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
-      <div class="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 md:p-8"
-           style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)">
+    <!-- Search Form - Sticky Container -->
+    <div class="sticky top-4 z-40 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 mb-8">
+      <div class="relative bg-gray-50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-4 md:p-5"
+           style="background: linear-gradient(135deg, rgba(249,250,251,0.98) 0%, rgba(243,244,246,0.98) 100%)">
         <!-- Loading Overlay -->
         <div v-if="loading" class="absolute inset-0 bg-white/80 flex items-center justify-center z-20 rounded-2xl">
           <div class="text-center">
@@ -27,22 +27,34 @@
         </div>
         
         <!-- Keyword Search (Always Visible) -->
-        <div class="relative space-y-3 mb-8">
+        <div class="relative space-y-2 mb-4">
           <label for="keyword" class="flex items-center gap-2 text-lg font-semibold text-gray-800">
             <Search :size="20" class="text-alaskan-600" />
             Search Recipes
           </label>
           <div class="flex items-center">
-            <input
-              id="keyword"
-              v-model="searchParams.keyword"
-              type="text"
-              autocomplete="off"
-              placeholder="What would you like to cook today?"
-              @keydown.enter="executeSearch"
-              :disabled="loading"
-              class="flex-1 h-12 px-5 text-lg border-2 border-gray-200 rounded-l-xl focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
-            >
+            <div class="relative flex-1">
+              <input
+                id="keyword"
+                v-model="searchParams.keyword"
+                type="text"
+                autocomplete="off"
+                placeholder="What would you like to cook today?"
+                @keydown.enter="executeSearch"
+                :disabled="loading"
+                class="w-full h-12 pl-5 pr-12 text-lg border-2 border-gray-200 rounded-l-xl focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200 disabled:cursor-not-allowed"
+              >
+              <!-- Clear button -->
+              <button
+                v-if="searchParams.keyword"
+                @click="clearKeyword"
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                aria-label="Clear search"
+              >
+                <X :size="18" />
+              </button>
+            </div>
             <button
               @click="executeSearch"
               :disabled="loading || !searchParams.keyword.trim()"
@@ -144,84 +156,30 @@
           </div>
         </div>
 
-        <!-- New Filter Input (Slide-down) -->
-        <Transition
-          enter-active-class="transition-all duration-200 ease-out"
-          enter-from-class="transform -translate-y-2 opacity-0"
-          enter-to-class="transform translate-y-0 opacity-100"
-          leave-active-class="transition-all duration-200 ease-in"
-          leave-from-class="transform translate-y-0 opacity-100"
-          leave-to-class="transform -translate-y-2 opacity-0"
-        >
-          <div v-if="showIngredientInput" class="mt-3 p-3 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
-            <div class="flex items-center gap-2">
-              <Utensils :size="16" class="text-ocean-600" />
-              <input
-                id="temp-ingredient"
-                ref="ingredientInput"
-                v-model="tempIngredient"
-                type="text"
-                autocomplete="off"
-                placeholder="Add ingredient (e.g. chocolate, flour)"
-                @keydown.enter="addIngredient"
-                @keydown.escape="cancelIngredientInput"
-                class="flex-1 px-3 py-1.5 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 text-sm"
-              >
-              <button
-                @click="addIngredient"
-                class="px-3 py-1.5 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
-              >
-                Add
-              </button>
-              <button
-                @click="cancelIngredientInput"
-                class="p-1.5 text-driftwood-600 hover:text-driftwood-800 transition-colors"
-                aria-label="Cancel"
-              >
-                <X :size="16" />
-              </button>
-            </div>
-          </div>
-        </Transition>
+        <!-- New Filter Inputs using reusable component -->
+        <FilterInput
+          v-model="tempIngredient"
+          :visible="showIngredientInput"
+          placeholder="Add ingredient (e.g. chocolate, flour)"
+          input-type="text"
+          input-id="temp-ingredient"
+          :icon="Utensils"
+          icon-class="text-ocean-600"
+          @add="addIngredient"
+          @cancel="cancelIngredientInput"
+        />
         
-        <Transition
-          enter-active-class="transition-all duration-200 ease-out"
-          enter-from-class="transform -translate-y-2 opacity-0"
-          enter-to-class="transform translate-y-0 opacity-100"
-          leave-active-class="transition-all duration-200 ease-in"
-          leave-from-class="transform translate-y-0 opacity-100"
-          leave-to-class="transform -translate-y-2 opacity-0"
-        >
-          <div v-if="showAuthorInput" class="mt-3 p-3 bg-golden-50 border-2 border-golden-300 rounded-lg shadow-sm">
-            <div class="flex items-center gap-2">
-              <User :size="16" class="text-salmon-600" />
-              <input
-                id="temp-author"
-                ref="authorInput"
-                v-model="tempAuthor"
-                type="email"
-                autocomplete="off"
-                placeholder="Add author email"
-                @keydown.enter="addAuthor"
-                @keydown.escape="cancelAuthorInput"
-                class="flex-1 px-3 py-1.5 border-2 border-golden-400 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 text-sm"
-              >
-              <button
-                @click="addAuthor"
-                class="px-3 py-1.5 bg-golden-500 hover:bg-golden-600 text-white rounded-md transition-all duration-200 font-medium text-sm"
-              >
-                Add
-              </button>
-              <button
-                @click="cancelAuthorInput"
-                class="p-1.5 text-driftwood-600 hover:text-driftwood-800 transition-colors"
-                aria-label="Cancel"
-              >
-                <X :size="16" />
-              </button>
-            </div>
-          </div>
-        </Transition>
+        <FilterInput
+          v-model="tempAuthor"
+          :visible="showAuthorInput"
+          placeholder="Add author email"
+          input-type="email"
+          input-id="temp-author"
+          :icon="User"
+          icon-class="text-salmon-600"
+          @add="addAuthor"
+          @cancel="cancelAuthorInput"
+        />
       </div>
     </div>
 
@@ -318,7 +276,8 @@ import { useLazyQuery } from '@vue/apollo-composable'
 import { SEARCH_RECIPES } from '../graphql/queries'
 import RecipeCard from '../components/RecipeCard.vue'
 import HeroText from '../components/HeroText.vue'
-import { Search, Utensils, X, Loader2, FileText, UtensilsCrossed, Rocket, ListFilter, User } from 'lucide-vue-next'
+import FilterInput from '../components/FilterInput.vue'
+import { Search, Utensils, Loader2, FileText, UtensilsCrossed, Rocket, ListFilter, User, X } from 'lucide-vue-next'
 
 // Reactive search parameters
 const searchParams = reactive({
@@ -520,6 +479,11 @@ const clearSearch = () => {
   refetch(variables)
 }
 
+// Clear only keyword field
+const clearKeyword = () => {
+  searchParams.keyword = ''
+}
+
 // Filter management methods
 const addIngredient = () => {
   const ingredient = tempIngredient.value.trim()
@@ -576,10 +540,8 @@ const selectFilterType = (type) => {
   showFilterMenu.value = false
   if (type === 'ingredient') {
     showIngredientInput.value = true
-    setTimeout(() => document.getElementById('temp-filter-input')?.focus(), 100)
   } else if (type === 'author') {
     showAuthorInput.value = true
-    setTimeout(() => document.getElementById('temp-filter-input')?.focus(), 100)
   }
 }
 
