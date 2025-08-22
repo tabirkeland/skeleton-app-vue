@@ -1,87 +1,167 @@
 <template>
   <div class="min-h-screen">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-alaskan-500 to-ocean-600 text-white pb-16 pt-12">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div class="flex justify-center mb-6">
-          <img src="/src/assets/logo-text.png" alt="Wild Alaskan Recipes" class="h-24 md:h-32 filter brightness-0 invert">
+    <div class="relative text-white pb-16 pt-12 min-h-[60vh] bg-cover bg-center bg-no-repeat" 
+         style="background-image: url('/src/assets/hero-background.png')">
+      <!-- Optional overlay for better text readability -->
+      <div class="absolute inset-0 bg-black/20"></div>
+      
+      <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="flex justify-center">
+          <img src="/src/assets/logo-text.png" alt="Wild Alaskan Recipes" class="h-40 md:h-56 lg:h-64 filter brightness-0 invert drop-shadow-lg">
         </div>
-        <h1 class="text-3xl md:text-5xl font-bold mb-4">Find Amazing Wild Alaskan Recipes</h1>
-        <p class="text-lg md:text-xl opacity-90">Discover delicious recipes using our advanced search filters</p>
+        <h1 class="text-3xl md:text-4xl font-bold mb-4 drop-shadow-lg">Find Amazing Wild Alaskan Recipes</h1>
+        <p class="text-lg md:text-xl opacity-95 drop-shadow-md">Discover delicious recipes using our advanced search filters</p>
       </div>
     </div>
 
     <!-- Search Form -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
-      <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div class="space-y-2">
-            <label for="keyword" class="block text-sm font-semibold text-gray-700">🔍 Keyword Search</label>
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 md:p-8"
+           style="background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)">
+        <!-- Keyword Search (Always Visible) -->
+        <div class="space-y-3 mb-8">
+          <label for="keyword" class="flex items-center gap-2 text-lg font-semibold text-gray-800">
+            <Search :size="20" class="text-alaskan-600" />
+            Search Recipes
+          </label>
+          <div class="relative">
             <input
               id="keyword"
               v-model="searchParams.keyword"
               type="text"
-              placeholder="Search recipe name or description..."
+              placeholder="What would you like to cook today?"
               @input="debouncedSearch"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+              class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-alaskan-500/20 focus:border-alaskan-500 transition-all duration-200 text-gray-900 placeholder-gray-500 shadow-sm hover:border-gray-300"
             >
-          </div>
-          <div class="space-y-2">
-            <label for="ingredient" class="block text-sm font-semibold text-gray-700">🥄 Ingredient</label>
-            <input
-              id="ingredient"
-              v-model="searchParams.ingredient"
-              type="text"
-              placeholder="e.g. chocolate, flour, eggs..."
-              @input="debouncedSearch"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
-            >
+            <div class="absolute inset-y-0 right-0 flex items-center pr-6">
+              <Search :size="20" class="text-gray-400" />
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div class="space-y-2">
-            <label for="author-name" class="block text-sm font-semibold text-gray-700">👨‍🍳 Author Name</label>
-            <input
-              id="author-name"
-              v-model="searchParams.author_name"
-              type="text"
-              placeholder="e.g. Gordon Ramsay"
-              @input="debouncedSearch"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+        <!-- Active Filter Badges -->
+        <div v-if="hasActiveFilters" class="mb-8">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700">Active Filters</h3>
+            <button
+              @click="clearSearch"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
             >
+              <X :size="14" />
+              Clear All
+            </button>
           </div>
-          <div class="space-y-2">
-            <label for="author" class="block text-sm font-semibold text-gray-700">📧 Author Email</label>
-            <input
-              id="author"
-              v-model="searchParams.author_email"
-              type="email"
-              placeholder="chef@example.com"
-              @input="debouncedSearch"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alaskan-500 focus:border-transparent transition-colors text-gray-900 placeholder-gray-500"
+          <div class="flex flex-wrap gap-3">
+            <!-- Ingredient Badges -->
+            <div
+              v-for="(ingredient, index) in searchParams.ingredients"
+              :key="`ingredient-${index}`"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-medium transition-all hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
+              <Utensils :size="16" />
+              <span>{{ ingredient }}</span>
+              <button
+                @click="removeIngredient(index)"
+                class="hover:bg-white/20 rounded-full p-1 transition-colors"
+                :aria-label="`Remove ingredient: ${ingredient}`"
+              >
+                <X :size="12" />
+              </button>
+            </div>
+            
+            <!-- Author Badges -->
+            <div
+              v-for="(author, index) in searchParams.authors"
+              :key="`author-${index}`"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg text-sm font-medium transition-all hover:from-purple-600 hover:to-purple-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            >
+              <Mail :size="16" />
+              <span>{{ author }}</span>
+              <button
+                @click="removeAuthor(index)"
+                class="hover:bg-white/20 rounded-full p-1 transition-colors"
+                :aria-label="`Remove author: ${author}`"
+              >
+                <X :size="12" />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div class="flex justify-center space-x-4">
-          <button
-            @click="performSearch"
-            :disabled="!hasAnySearchParams || loading"
-            class="px-6 py-3 bg-alaskan-500 hover:bg-alaskan-600 disabled:bg-gray-300 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2 disabled:cursor-not-allowed"
-          >
-            <span v-if="loading" class="flex items-center">
-              <div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-              Searching...
-            </span>
-            <span v-else>🔍 Search Recipes</span>
-          </button>
-          <button
-            @click="clearSearch"
-            class="px-6 py-3 bg-driftwood-100 hover:bg-driftwood-200 text-driftwood-700 font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2"
-          >
-            🗑️ Clear All Filters
-          </button>
+        <!-- Dynamic Filter Inputs -->
+        <div class="space-y-6 mb-8">
+          <!-- Ingredient Input -->
+          <div v-if="showIngredientInput" class="bg-blue-50/50 rounded-xl p-6 border-2 border-blue-200 transition-all duration-300 ease-in-out">
+            <label for="temp-ingredient" class="flex items-center gap-2 text-base font-semibold text-blue-800 mb-3">
+              <Utensils :size="18" />
+              Add Ingredient
+            </label>
+            <div class="relative">
+              <input
+                id="temp-ingredient"
+                ref="ingredientInput"
+                v-model="tempIngredient"
+                type="text"
+                placeholder="e.g. chocolate, flour, eggs..."
+                @keydown.enter="addIngredient"
+                @blur="addIngredient"
+                @keydown.escape="cancelIngredientInput"
+                class="w-full px-5 py-3 border-2 border-blue-300 rounded-lg focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white shadow-sm"
+              >
+              <div class="absolute inset-y-0 right-0 flex items-center pr-4">
+                <span class="text-xs text-gray-500">Press Enter to add</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Author Input -->
+          <div v-if="showAuthorInput" class="bg-purple-50/50 rounded-xl p-6 border-2 border-purple-200 transition-all duration-300 ease-in-out">
+            <label for="temp-author" class="flex items-center gap-2 text-base font-semibold text-purple-800 mb-3">
+              <Mail :size="18" />
+              Add Author Email
+            </label>
+            <div class="relative">
+              <input
+                id="temp-author"
+                ref="authorInput"
+                v-model="tempAuthor"
+                type="email"
+                placeholder="chef@example.com"
+                @keydown.enter="addAuthor"
+                @blur="addAuthor"
+                @keydown.escape="cancelAuthorInput"
+                class="w-full px-5 py-3 border-2 border-purple-300 rounded-lg focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white shadow-sm"
+              >
+              <div class="absolute inset-y-0 right-0 flex items-center pr-4">
+                <span class="text-xs text-gray-500">Press Enter to add</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Addition Section -->
+        <div class="bg-gray-50/50 rounded-xl p-6 border border-gray-100">
+          <h3 class="text-sm font-semibold text-gray-700 mb-4">Add Filters</h3>
+          <div class="flex flex-wrap gap-3">
+            <button
+              v-if="!showIngredientInput"
+              @click="showIngredientInput = true; $nextTick(() => $refs.ingredientInput?.focus())"
+              class="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border border-blue-300 rounded-xl transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            >
+              <Plus :size="16" />
+              Add Ingredient
+            </button>
+            
+            <button
+              v-if="!showAuthorInput"
+              @click="showAuthorInput = true; $nextTick(() => $refs.authorInput?.focus())"
+              class="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border border-purple-300 rounded-xl transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            >
+              <Plus :size="16" />
+              Add Author
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -90,14 +170,20 @@
     <div v-if="loading && !recipes.length" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
       <div class="bg-white rounded-xl shadow-lg p-8 text-center">
         <div class="animate-spin w-8 h-8 border-4 border-alaskan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p class="text-lg text-gray-600">🔍 Searching recipes...</p>
+        <p class="flex items-center justify-center gap-2 text-lg text-gray-600">
+          <Search :size="20" />
+          Searching recipes...
+        </p>
       </div>
     </div>
 
     <!-- Error State -->
     <div v-if="error" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
       <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <p class="text-red-800 mb-4">❌ Error loading recipes: {{ error.message }}</p>
+        <p class="flex items-center justify-center gap-2 text-red-800 mb-4">
+          <X :size="20" />
+          Error loading recipes: {{ error.message }}
+        </p>
         <button
           @click="refetch"
           class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
@@ -130,7 +216,14 @@
           :disabled="loadingMore"
           class="px-6 py-3 bg-alaskan-500 hover:bg-alaskan-600 disabled:bg-driftwood-400 text-white font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2 disabled:cursor-not-allowed"
         >
-          {{ loadingMore ? '⏳ Loading...' : '📄 Load More Recipes' }}
+          <span v-if="loadingMore" class="flex items-center gap-2">
+            <Loader2 :size="16" class="animate-spin" />
+            Loading...
+          </span>
+          <span v-else class="flex items-center gap-2">
+            <FileText :size="16" />
+            Load More Recipes
+          </span>
         </button>
       </div>
     </div>
@@ -138,7 +231,9 @@
     <!-- No Results -->
     <div v-if="!loading && !error && !recipes.length && hasSearched" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
       <div class="bg-white rounded-xl shadow-lg p-8 text-center">
-        <div class="text-6xl mb-4">🍽️</div>
+        <div class="mb-4">
+          <UtensilsCrossed :size="48" class="mx-auto text-gray-400" />
+        </div>
         <h3 class="text-xl font-semibold text-gray-900 mb-2">No recipes found</h3>
         <p class="text-gray-600 mb-4">No recipes match your search criteria</p>
         <p class="text-gray-500">Try different keywords or clear your filters</p>
@@ -148,7 +243,9 @@
     <!-- Welcome State -->
     <div v-if="!hasSearched && !loading" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-16">
       <div class="bg-white rounded-xl shadow-lg p-8 text-center">
-        <div class="text-6xl mb-4">🚀</div>
+        <div class="mb-4">
+          <Rocket :size="48" class="mx-auto text-gray-400" />
+        </div>
         <h3 class="text-xl font-semibold text-gray-900 mb-2">Ready to find amazing recipes?</h3>
         <p class="text-gray-600 mb-2">Start searching using the form above!</p>
         <p class="text-gray-500">Try searching for "chocolate", or by ingredient like "flour"</p>
@@ -162,16 +259,22 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useLazyQuery } from '@vue/apollo-composable'
 import { SEARCH_RECIPES } from '../graphql/queries'
 import RecipeCard from '../components/RecipeCard.vue'
+import { Search, Utensils, Mail, X, Plus, Trash2, Loader2, FileText, UtensilsCrossed, Rocket } from 'lucide-vue-next'
 
 // Reactive search parameters
 const searchParams = reactive({
   keyword: '',
-  ingredient: '',
-  author_name: '',
-  author_email: '',
+  ingredients: [],
+  authors: [],
   page: 1,
   perPage: 12
 })
+
+// Temporary input states for adding new filters
+const tempIngredient = ref('')
+const tempAuthor = ref('')
+const showIngredientInput = ref(false)
+const showAuthorInput = ref(false)
 
 // Component state
 const recipes = ref([])
@@ -194,10 +297,9 @@ const debouncedSearch = () => {
 
 // Reactive variables object
 const queryVariables = computed(() => ({
-  author_name: searchParams.author_name || null,
-  author_email: searchParams.author_email || null,
+  author_email: searchParams.authors.length > 0 ? searchParams.authors.join(',') : null,
   keyword: searchParams.keyword || null,
-  ingredient: searchParams.ingredient || null,
+  ingredient: searchParams.ingredients.length > 0 ? searchParams.ingredients.join(',') : null,
   first: searchParams.perPage,
   page: searchParams.page
 }))
@@ -215,7 +317,11 @@ const { result, loading, error, load, refetch, fetchMore } = useLazyQuery(
 
 // Computed properties
 const hasAnySearchParams = computed(() => {
-  return searchParams.keyword || searchParams.ingredient || searchParams.author_name || searchParams.author_email
+  return searchParams.keyword || searchParams.ingredients.length > 0 || searchParams.authors.length > 0
+})
+
+const hasActiveFilters = computed(() => {
+  return searchParams.ingredients.length > 0 || searchParams.authors.length > 0
 })
 
 // Watch for query results
@@ -273,10 +379,9 @@ const loadMore = async () => {
   try {
     const nextPage = currentPage.value + 1
     const variables = {
-      author_name: searchParams.author_name || null,
-      author_email: searchParams.author_email || null,
+      author_email: searchParams.authors.length > 0 ? searchParams.authors.join(',') : null,
       keyword: searchParams.keyword || null,
-      ingredient: searchParams.ingredient || null,
+      ingredient: searchParams.ingredients.length > 0 ? searchParams.ingredients.join(',') : null,
       first: searchParams.perPage,
       page: nextPage
     }
@@ -298,12 +403,56 @@ const loadMore = async () => {
 // Clear search
 const clearSearch = () => {
   searchParams.keyword = ''
-  searchParams.ingredient = ''
-  searchParams.author_name = ''
-  searchParams.author_email = ''
+  searchParams.ingredients = []
+  searchParams.authors = []
   searchParams.page = 1
+  tempIngredient.value = ''
+  tempAuthor.value = ''
+  showIngredientInput.value = false
+  showAuthorInput.value = false
   recipes.value = []
   hasSearched.value = false
+}
+
+// Filter management methods
+const addIngredient = () => {
+  const ingredient = tempIngredient.value.trim()
+  if (ingredient && !searchParams.ingredients.includes(ingredient)) {
+    searchParams.ingredients.push(ingredient)
+    debouncedSearch()
+  }
+  tempIngredient.value = ''
+  showIngredientInput.value = false
+}
+
+const removeIngredient = (index) => {
+  searchParams.ingredients.splice(index, 1)
+  debouncedSearch()
+}
+
+const addAuthor = () => {
+  const author = tempAuthor.value.trim()
+  if (author && !searchParams.authors.includes(author)) {
+    searchParams.authors.push(author)
+    debouncedSearch()
+  }
+  tempAuthor.value = ''
+  showAuthorInput.value = false
+}
+
+const removeAuthor = (index) => {
+  searchParams.authors.splice(index, 1)
+  debouncedSearch()
+}
+
+const cancelIngredientInput = () => {
+  tempIngredient.value = ''
+  showIngredientInput.value = false
+}
+
+const cancelAuthorInput = () => {
+  tempAuthor.value = ''
+  showAuthorInput.value = false
 }
 
 // Component is ready

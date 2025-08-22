@@ -7,11 +7,11 @@
       </h3>
       <div class="flex flex-col space-y-2 text-sm text-gray-600">
         <span class="flex items-center">
-          <span class="mr-2">👨‍🍳</span>
+          <ChefHat :size="16" class="mr-2" />
           {{ recipe.primary_author?.name || recipe.author_email || 'Unknown Chef' }}
         </span>
         <span class="flex items-center">
-          <span class="mr-2">📅</span>
+          <Calendar :size="16" class="mr-2" />
           {{ formatDate(recipe.created_at) }}
         </span>
       </div>
@@ -26,11 +26,11 @@
     <div class="px-6 pb-4">
       <div class="flex justify-between items-center bg-gray-50 rounded-lg p-3">
         <div class="flex items-center text-sm font-medium text-gray-700">
-          <span class="mr-2 text-lg">🥄</span>
+          <Utensils :size="16" class="mr-2" />
           {{ recipe.ingredient_count }} ingredients
         </div>
         <div class="flex items-center text-sm font-medium text-gray-700">
-          <span class="mr-2 text-lg">📋</span>
+          <ClipboardList :size="16" class="mr-2" />
           {{ recipe.step_count }} steps
         </div>
       </div>
@@ -62,7 +62,10 @@
         :to="`/recipe/${recipe.slug}`"
         class="block w-full bg-gradient-to-r from-alaskan-500 to-ocean-600 hover:from-alaskan-600 hover:to-ocean-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition-all duration-200 hover:shadow-lg focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2"
       >
-        👀 View Full Recipe
+        <span class="flex items-center justify-center gap-2">
+          <Eye :size="16" />
+          View Full Recipe
+        </span>
       </router-link>
     </div>
   </div>
@@ -70,6 +73,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { ChefHat, Calendar, Utensils, ClipboardList, Eye } from 'lucide-vue-next'
 
 const props = defineProps({
   recipe: {

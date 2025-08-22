@@ -11,7 +11,10 @@
     <!-- Error State -->
     <div v-if="error" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
-        <h2 class="text-2xl font-bold text-red-800 mb-4">❌ Recipe Not Found</h2>
+        <h2 class="flex items-center justify-center gap-2 text-2xl font-bold text-red-800 mb-4">
+          <X :size="24" />
+          Recipe Not Found
+        </h2>
         <p class="text-red-700 mb-6">{{ error.message }}</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <button 
@@ -33,35 +36,35 @@
         <!-- Recipe Meta -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div v-if="recipe.primary_author" class="flex items-center space-x-2">
-            <span class="text-lg">👨‍🍳</span>
+            <ChefHat :size="20" />
             <div>
               <div class="text-sm opacity-90">Chef</div>
               <div class="font-semibold">{{ recipe.primary_author.name }}</div>
             </div>
           </div>
           <div v-if="recipe.prep_time" class="flex items-center space-x-2">
-            <span class="text-lg">⏱️</span>
+            <Clock :size="20" />
             <div>
               <div class="text-sm opacity-90">Prep</div>
               <div class="font-semibold">{{ recipe.prep_time }}m</div>
             </div>
           </div>
           <div v-if="recipe.cook_time" class="flex items-center space-x-2">
-            <span class="text-lg">🔥</span>
+            <Flame :size="20" />
             <div>
               <div class="text-sm opacity-90">Cook</div>
               <div class="font-semibold">{{ recipe.cook_time }}m</div>
             </div>
           </div>
           <div v-if="recipe.servings" class="flex items-center space-x-2">
-            <span class="text-lg">🍽️</span>
+            <UtensilsCrossed :size="20" />
             <div>
               <div class="text-sm opacity-90">Servings</div>
               <div class="font-semibold">{{ recipe.servings }}</div>
             </div>
           </div>
           <div class="flex items-center space-x-2">
-            <span class="text-lg">📅</span>
+            <Calendar :size="20" />
             <div>
               <div class="text-sm opacity-90">Created</div>
               <div class="font-semibold">{{ formatDate(recipe.created_at) }}</div>
@@ -87,7 +90,7 @@
         <!-- Description -->
         <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-            <span class="mr-3">📖</span>
+            <BookOpen :size="24" class="mr-3" />
             Description
           </h2>
           <p class="text-gray-700 text-lg leading-relaxed">{{ recipe.description }}</p>
@@ -96,7 +99,7 @@
         <!-- Ingredients -->
         <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <span class="mr-3">🥄</span>
+            <Utensils :size="24" class="mr-3" />
             Ingredients
           </h2>
           <div class="space-y-3">
@@ -116,7 +119,7 @@
         <!-- Instructions -->
         <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <span class="mr-3">📋</span>
+            <ClipboardList :size="24" class="mr-3" />
             Instructions
           </h2>
           <div class="space-y-6">
@@ -145,6 +148,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery } from '@vue/apollo-composable'
 import { GET_RECIPE } from '../graphql/queries'
+import { ChefHat, Clock, Flame, UtensilsCrossed, Calendar, BookOpen, Utensils, ClipboardList, X } from 'lucide-vue-next'
 
 const route = useRoute()
 

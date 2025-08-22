@@ -69,8 +69,8 @@ export const RECIPE_FRAGMENT = gql`
 
 // Search recipes with pagination
 export const SEARCH_RECIPES = gql`
-  query SearchRecipes($author_email: String, $author_name: String, $keyword: String, $ingredient: String, $first: Int, $page: Int) {
-    recipes(author_email: $author_email, author_name: $author_name, keyword: $keyword, ingredient: $ingredient, first: $first, page: $page) {
+  query SearchRecipes($author_email: String, $keyword: String, $ingredient: String, $first: Int, $page: Int) {
+    recipes(author_email: $author_email, keyword: $keyword, ingredient: $ingredient, first: $first, page: $page) {
       data {
         id
         name

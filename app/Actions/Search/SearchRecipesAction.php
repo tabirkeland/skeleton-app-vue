@@ -61,9 +61,9 @@ class SearchRecipesAction implements Action
     {
         $filters = [];
 
-        // Normalize author email for consistent searching
+        // Normalize author email(s) for consistent searching
         if (! empty($parameters['author_email'])) {
-            $filters['author_email'] = $this->normalizeEmail($parameters['author_email']);
+            $filters['author_emails'] = $this->normalizeEmails($parameters['author_email']);
         }
 
         // Normalize author name for consistent searching
@@ -76,9 +76,9 @@ class SearchRecipesAction implements Action
             $filters['keyword'] = $this->normalizeSearchKeyword($parameters['keyword']);
         }
 
-        // Normalize ingredient for consistent ingredient matching
+        // Normalize ingredient(s) for consistent ingredient matching
         if (! empty($parameters['ingredient'])) {
-            $filters['ingredient'] = $this->normalizeIngredient($parameters['ingredient']);
+            $filters['ingredients'] = $this->normalizeIngredients($parameters['ingredient']);
         }
 
         return $filters;
@@ -90,6 +90,20 @@ class SearchRecipesAction implements Action
     private function normalizeEmail(string $email): string
     {
         return trim(strtolower($email));
+    }
+
+    /**
+     * Normalize emails (supports comma-separated values).
+     */
+    private function normalizeEmails(string $emails): array
+    {
+        // Split by comma and normalize each email
+        return array_filter(
+            array_map(
+                fn($email) => $this->normalizeEmail($email),
+                explode(',', $emails)
+            )
+        );
     }
 
     /**
@@ -111,6 +125,20 @@ class SearchRecipesAction implements Action
     }
 
     /**
+     * Normalize ingredients (supports comma-separated values).
+     */
+    private function normalizeIngredients(string $ingredients): array
+    {
+        // Split by comma and normalize each ingredient
+        return array_filter(
+            array_map(
+                fn($ingredient) => $this->normalizeIngredient($ingredient),
+                explode(',', $ingredients)
+            )
+        );
+    }
+
+    /**
      * Perform the search with the given filters and pagination.
      */
     protected function performSearch(array $filters, int $page, int $perPage): LengthAwarePaginator
@@ -119,7 +147,36 @@ class SearchRecipesAction implements Action
 
         // Apply search filters using the RecipeBuilder's search method
         if (! empty($filters)) {
-            $query = $query->search($filters);
+            // Handle multiple ingredients separately
+            if (isset($filters['ingredients'])) {
+                $ingredients = $filters['ingredients'];
+                unset($filters['ingredients']);
+                
+                // Use withAnyIngredient for multiple ingredients (OR logic)
+                if (count($ingredients) > 1) {
+                    $query = $query->withAnyIngredient($ingredients);
+                } else {
+                    $query = $query->withIngredient($ingredients[0]);
+                }
+            }
+            
+            // Handle multiple author emails separately
+            if (isset($filters['author_emails'])) {
+                $emails = $filters['author_emails'];
+                unset($filters['author_emails']);
+                
+                // Use withAnyAuthor for multiple emails (OR logic)
+                if (count($emails) > 1) {
+                    $query = $query->withAnyAuthor($emails);
+                } else {
+                    $query = $query->byAuthor($emails[0]);
+                }
+            }
+            
+            // Apply other filters
+            if (! empty($filters)) {
+                $query = $query->search($filters);
+            }
         }
 
         // Order by creation date (newest first) for consistent results

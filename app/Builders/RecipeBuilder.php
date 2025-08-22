@@ -17,6 +17,16 @@ class RecipeBuilder extends Builder
     }
 
     /**
+     * Search with any of the author emails.
+     */
+    public function withAnyAuthor(array $emails): self
+    {
+        return $this->whereHas('authors', function ($query) use ($emails) {
+            $query->whereIn('email', $emails);
+        });
+    }
+
+    /**
      * Search by author name through relationship.
      */
     public function byAuthorName(string $name): self
