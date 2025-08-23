@@ -1,72 +1,36 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div id="app" class="min-h-screen bg-gray-50">
+    <!-- Minimal Navigation - only show on recipe detail pages -->
+    <nav v-if="route.name === 'recipe-detail'" class="sticky top-0 z-50 bg-gray-50/95 backdrop-blur-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-4">
+          <router-link 
+            to="/" 
+            class="inline-flex items-center px-4 py-2 bg-white hover:bg-alaskan-50 text-driftwood-700 font-semibold rounded-lg shadow-sm border border-driftwood-200 transition-colors focus:ring-2 focus:ring-alaskan-500 focus:ring-offset-2"
+          >
+            ← Back to Search
+          </router-link>
+          <router-link 
+            to="/" 
+            class="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
+            <img src="/src/assets/logo-no-text.png" alt="Wild Alaskan" class="h-8 w-8">
+            <span class="text-xl font-bold text-alaskan-700">Wild Alaskan Recipes</span>
+          </router-link>
+        </div>
+      </div>
+    </nav>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <RouterView />
+    <!-- Main content area - no constraints, let views control their layout -->
+    <main>
+      <RouterView />
+    </main>
+  </div>
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>

@@ -1,0 +1,167 @@
+# Recipe Search 3000 GraphQL Schema
+
+"A recipe with all its details"
+type Recipe {
+    "Unique identifier"
+    id: ID!
+
+    "Recipe name"
+    name: String!
+
+    "Recipe description"
+    description: String!
+
+    "Recipe category"
+    category: String
+
+    "URL-friendly identifier"
+    slug: String!
+
+    "Optional image URL"
+    image_url: String
+
+    "Preparation time in minutes"
+    prep_time: Int
+
+    "Cooking time in minutes"
+    cook_time: Int
+
+    "Number of servings"
+    servings: Int
+
+    "List of authors"
+    authors: [RecipeAuthor!]! @hasMany
+
+    "List of ingredients"
+    ingredients: [RecipeIngredient!]! @hasMany
+
+    "List of cooking steps"
+    steps: [RecipeStep!]!
+        @hasMany(orderBy: [{ column: "order", direction: ASC }])
+
+    "Primary author (first author)"
+    primary_author: RecipeAuthor @method(name: "getPrimaryAuthorAttribute")
+
+    "Author email (for backwards compatibility)"
+    author_email: String @method(name: "getAuthorEmailAttribute")
+
+    "Number of ingredients (computed field)"
+    ingredient_count: Int! @method(name: "getIngredientCountAttribute")
+
+    "Number of cooking steps (computed field)"
+    step_count: Int! @method(name: "getStepCountAttribute")
+
+    "Creation timestamp"
+    created_at: DateTime!
+
+    "Last update timestamp"
+    updated_at: DateTime!
+}
+
+"Recipe author information"
+type RecipeAuthor {
+    "Unique identifier"
+    id: ID!
+
+    "Recipe this author belongs to"
+    recipe: Recipe! @belongsTo
+
+    "Author name"
+    name: String!
+
+    "Author email"
+    email: String!
+
+    "About the author"
+    about: String
+
+    "Creation timestamp"
+    created_at: DateTime!
+
+    "Last update timestamp"
+    updated_at: DateTime!
+}
+
+"Recipe ingredient information"
+type RecipeIngredient {
+    "Unique identifier"
+    id: ID!
+
+    "Recipe this ingredient belongs to"
+    recipe: Recipe! @belongsTo
+
+    "Ingredient name"
+    name: String!
+
+    "Quantity amount"
+    quantity: Float!
+
+    "Unit of measurement"
+    unit: String
+
+    "Whether ingredient is checked off"
+    is_checked: Boolean!
+
+    "Formatted ingredient string"
+    formatted: String! @method(name: "getFormattedAttribute")
+
+    "Creation timestamp"
+    created_at: DateTime!
+
+    "Last update timestamp"
+    updated_at: DateTime!
+}
+
+"Recipe cooking step"
+type RecipeStep {
+    "Unique identifier"
+    id: ID!
+
+    "Recipe this step belongs to"
+    recipe: Recipe! @belongsTo
+
+    "Step title"
+    title: String
+
+    "Step description"
+    description: String!
+
+    "Step order number"
+    order: Int!
+
+    "Whether step is completed"
+    completed: Boolean!
+
+    "Creation timestamp"
+    created_at: DateTime!
+
+    "Last update timestamp"
+    updated_at: DateTime!
+}
+
+
+type Query {
+    "Search recipes with filters and pagination"
+    recipes(
+        keyword: String
+        ingredient: String
+        author_email: String
+    ): [Recipe!]!
+        @paginate(
+            defaultCount: 15
+            maxCount: 100
+            builder: "App\\GraphQL\\Queries\\SearchRecipes"
+        )
+
+    "Get a single recipe by its slug"
+    recipe(slug: String!): Recipe
+        @field(resolver: "App\\GraphQL\\Queries\\GetRecipe")
+
+    "Simple health check query"
+    health: String! @field(resolver: "App\\GraphQL\\Queries\\Health@resolve")
+}
+
+
+# Scalar type for DateTime
+scalar DateTime
+    @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")

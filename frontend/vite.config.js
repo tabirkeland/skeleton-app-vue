@@ -16,5 +16,17 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
+  },
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        globals: {}
+      }
+    }
   }
 })
